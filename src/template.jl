@@ -1,5 +1,5 @@
 
-struct SimulationTemplate{T}
+struct SimulationTemplate{T} <: RunnerFunc
     input_root::String
     exe_name::String
     non_modified_files::Vector{String}
@@ -29,16 +29,25 @@ function SimulationTemplate(input_root)
     return SimulationTemplate(input_root, exe_name, non_modified_files, reference_time)
 end
 
+function create_simulation(func::Function, template_like)
+    target=tempname()
+    create_simulation(template_like, target)
+    res = func(target)
+    rm(target, recursive=true)
+    return res
+end
+
 function create_simulation(template::SimulationTemplate, target=tempname())
     if !isdir(target)
         mkdir(target)
     end
-    for file_name in [template.non_modified_files; [template.exe_name]]
+    # for file_name in [template.non_modified_files; [template.exe_name]]
+    for file_name in template.non_modified_files
         src_p = joinpath(template.input_root, file_name)
         dst_p = joinpath(target, file_name)
         symlink(src_p, dst_p)
     end
-    println("symlink env: $(template.input_root) -> $target") # TODO: use logging
+    @debug "symlink env: $(template.input_root) -> $target"
     return target
 end
 
@@ -48,18 +57,13 @@ const restart_map = Dict(
     "WQWCRST.OUT" => "wqini.inp"
 )
 
-function setup_restart(src_root, dst_root)
-    for (out_name, inp_name) in restart_map
-        src_p = joinpath(src_root, out_name)
-        dst_p = joinpath(dst_root, inp_name)
-        if isfile(dst_p)
-            rm(dst_p)
-        end
-        cp(src_p, dst_p)
-        @assert isfile(dst_p)
-    end
-    println("copy restart files: $src_root -> $dst_root") # TODO: use logging
-end
-
 # We will not define a dispatch on template to use `template.input_root` since 
 # the grand template may don't have restart files.
+
+function Base.show(io::IO, t::SimulationTemplate)
+    print(io, "SimulationTempate(input_root=$(t.input_root), exe_name=$(t.exe_name), reference_time=$(t.reference_time), length(non_modified_files)=$(length(t.non_modified_files)))")
+end
+
+function get_exe_path(t::SimulationTemplate)
+    return joinpath(t.input_root, t.exe_name)
+end

@@ -3,7 +3,7 @@ module efdc_inp_io
 
 export efdc_inp
 using DataFrames
-import ..EFDCLGT_LR_Files: generate_parse, load, save, AbstractFile
+import ..EFDCLGT_LR_Files: generate_parse, load, save, AbstractFile, name
 
 const card_info_dsl = """
 C02  ISRESTI   ISDRY  ISIMTMP  ISIMWQ  ISIMDYE  TEMO  RKDYE  IASWRAD  SWRATNF   REVCHC  DABEDT  TBEDIT HTBED1 HTBED2    KBHM
@@ -70,5 +70,7 @@ function save(io::IO, d::efdc_inp)
         # write(io, "\n")
     end
 end
+
+name(::Type{efdc_inp}) = "efdc.inp"
 
 end
