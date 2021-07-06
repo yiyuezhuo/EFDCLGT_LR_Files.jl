@@ -60,8 +60,8 @@ struct efdc_inp <: AbstractFile
     df_map::Dict{String, DataFrame}
 end
 
-function load(p, ::Type{efdc_inp})
-    return efdc_inp(_parse(eachline(p))...)
+function load(io::IO, ::Type{efdc_inp})
+    return efdc_inp(_parse(eachline(io))...)
 end
 
 function save(io::IO, d::efdc_inp)

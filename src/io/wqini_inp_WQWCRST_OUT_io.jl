@@ -12,6 +12,7 @@ struct wqini_inp <: AbstractWqRestartFile
     df::DataFrame
 end
 
+"""
 function load(p, ::Type{<:AbstractWqRestartFile})
     first_lines, table, df = open(p) do f
         lines = eachline(f)
@@ -25,6 +26,21 @@ function load(p, ::Type{<:AbstractWqRestartFile})
         rename!(df, split(first_lines[end]))
         return first_lines, table, df
     end
+
+    return wqini_inp(first_lines[1:end-1], df)
+end
+"""
+
+function load(io::IO, ::Type{<:AbstractWqRestartFile})
+    lines = eachline(io)
+    first_lines = Iterators.take(lines, 4) |> collect
+
+    buf = IOBuffer(join([replace(strip(line), "\t"=>" ") for line in lines], "\n")) # TODO: implement a specialized parser to avoid these ugly hacks.
+    seek(buf, 0)
+
+    table = CSV.File(buf, header=false, delim=" ", ignorerepeated=true)
+    df = DataFrame(table)
+    rename!(df, split(first_lines[end]))
 
     return wqini_inp(first_lines[1:end-1], df)
 end

@@ -18,6 +18,8 @@ function Replacer(template::SimulationTemplate)
     return Replacer(template, Type[])
 end
 
+parent(r::Replacer) = r.template
+
 function _create_simulation(replacer::Replacer, target=tempname())
     for (ftype, d) in replacer.replace_map
         fp = joinpath(target, name(ftype))
@@ -76,21 +78,25 @@ end
 function set_begin_day!(r::Replacer, begin_r_day::Day)
     C03 = r.replace_map[efdc_inp].df_map["C03"]
     C03[1, "TBEGIN"] = begin_r_day.value
+    return r
 end
 
 function set_begin_day!(r::Replacer, begin_day::DateTime)
     C03 = r.replace_map[efdc_inp].df_map["C03"]
     C03[1, "TBEGIN"] = Day(begin_day - r.template.reference_time).value
+    return r
 end
 
 function set_sim_length!(r::Replacer, sim_length::Day)
     C03 = r.replace_map[efdc_inp].df_map["C03"]
     C03[1, "NTC"] = sim_length.value
+    return r
 end
 
 function set_sim_length!(r::Replacer, end_day::DateTime)
     C03 = r.replace_map[efdc_inp].df_map["C03"]
     C03[1, "NTC"] = Day(end_day - r.template.reference_time).value - C03[1, "TBEGIN"]
+    return r
 end
 
 function get_begin_day(::Type{Day}, r::Replacer)
@@ -123,6 +129,29 @@ function is_restarting(r::Replacer)
 end
 
 function set_restarting!(r::Replacer, restarting::Bool)
-    C02 = r.replace_map[efdc_inp]["C02"]
+    C02 = r.replace_map[efdc_inp].df_map["C02"]
     C02[1, "ISRESTI"] = restarting ? 1 : 0
+    return r
 end
+
+function add_begin_day!(r::Replacer, d::Day)
+    return set_begin_day!(r, get_begin_day(Day, r) + d)
+end
+
+function add_begin_day!(r::Replacer)
+    d = get_sim_length(Day, r)
+    return add_begin_day!(r, d)
+end
+
+
+set_begin_day!(r::Runner, x) = set_begin_day!(parent(r), x)
+set_sim_length!(r::Runner, x) = set_sim_length!(parent(r), x)
+get_begin_day(T, r::Runner) = get_begin_day(T, parent(r))
+get_sim_length(T, r::Runner) = get_sim_length(T, parent(r))
+is_restarting(r::Runner) = is_restarting(parent(r))
+set_restarting!(r::Runner, x) = set_restarting!(parent(r), x)
+add_begin_day!(r::Runner, x) = add_begin_day!(parent(r), x)
+add_begin_day!(r::Runner) = add_begin_day!(parent(r))
+
+copy_replacer(r::Replacer) = copy(r)
+copy_replacer(r::Runner) = copy_replacer(parent(r))

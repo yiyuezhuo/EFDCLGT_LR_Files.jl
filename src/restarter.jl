@@ -3,11 +3,13 @@ struct Restarter <: RunnerFunc
     replacer::Replacer
     root_completed::String
     Restarter(replacer::Replacer, root_completed::String) = begin
-        @assert efdc_inp in replacer.replace_map
-        @assert is_restarting(replacer.restarter)
+        @assert efdc_inp in keys(replacer.replace_map)
+        @assert is_restarting(replacer)
         new(replacer, root_completed)
     end
 end
+
+parent(r::Restarter) = r.replacer
 
 function create_simulation(restarter::Restarter, target=tempname())
     replacer = restarter.replacer
@@ -29,4 +31,8 @@ function create_simulation(restarter::Restarter, target=tempname())
     end
 
     _create_simulation(replacer, target)
+end
+
+function Base.show(io::IO, r::Restarter)
+    print(io, "Restarter(replacer=$(r.replacer), root_completed=$(r.root_completed))")
 end

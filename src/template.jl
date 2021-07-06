@@ -1,9 +1,11 @@
 
-struct SimulationTemplate{T} <: RunnerFunc
+struct SimulationTemplate <: RunnerFunc
     input_root::String
     exe_name::String
     non_modified_files::Vector{String}
-    reference_time::T
+    reference_time::DateTime
+    total_begin::Day
+    total_length::Day
 end
 
 function SimulationTemplate(input_root)
@@ -26,7 +28,15 @@ function SimulationTemplate(input_root)
         return JSON.parse(read(f, String))
     end
 
-    return SimulationTemplate(input_root, exe_name, non_modified_files, reference_time)
+    efdc = load(joinpath(input_root, name(efdc_inp)), efdc_inp)
+    total_begin = Day(efdc.df_map["C03"][1, "TBEGIN"])
+    total_length = Day(efdc.df_map["C03"][1, "NTC"])
+
+    return SimulationTemplate(input_root, exe_name, non_modified_files, reference_time, total_begin, total_length)
+end
+
+function parent(t::SimulationTemplate)
+    error("SimulationTemplate is most respectful elder toad! How dare Xi, the white pig!")
 end
 
 function create_simulation(func::Function, template_like)
@@ -67,3 +77,23 @@ end
 function get_exe_path(t::SimulationTemplate)
     return joinpath(t.input_root, t.exe_name)
 end
+
+function get_total_begin(::Type{Day}, t::SimulationTemplate)
+    return t.total_begin
+end
+
+function get_total_begin(::Type{DateTime}, t::SimulationTemplate)
+    return t.reference_time + t.total_begin
+end
+
+function get_total_length(::Type{Day}, t::SimulationTemplate)
+    return t.total_length
+end
+
+function get_total_length(::Type{DateTime}, t::SimulationTemplate)
+    return t.reference_time + t.total_begin + t.total_length
+end
+
+get_exe_path(r::Runner) = get_exe_path(parent(r))
+get_total_begin(T, r::Runner) = get_total_begin(T, parent(r))
+get_total_length(T, r::Runner) = get_total_length(T, parent(r))
