@@ -4,7 +4,7 @@ using Base: String
 using DataFrames
 export # file structs
     AbstractFile, efdc_inp, wqini_inp, WQWCRST_OUT, WQWCTS_OUT, cumu_struct_outflow_out, aser_inp,
-    qbal_out,
+    qbal_out, qser_inp, wqpsc_inp,
     # file methods
     load, save, align, time_align, value_align, align,
     # Runners

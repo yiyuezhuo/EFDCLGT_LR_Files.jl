@@ -7,8 +7,8 @@ function load(path, T::Type{<:AbstractFile})
     end
 end
 
-function load(::IO, ::Type{<:AbstractFile})
-    error("Unsupporedted load format $f")
+function load(::IO, D::Type{<:AbstractFile})
+    error("Unsupporedted load format $D")
 end
 
 function save(path, d::AbstractFile)
@@ -48,6 +48,24 @@ end
 EX:
 time_align(df, "time", Day, DateTime) # "lossless" datetime
 time_align(df, "time", Day, Hour) # datetime rounded to hour
+
+For pairs, this requires:
+
+1687.25	0.02618311
+1687.291666625	0.02618311
+1687.2916666666667	0.02616940
+1687.3333332916666	0.02616940
+
+while 		
+
+1718.333333	0
+1718.375	0
+1718.375	0
+1718.416667	0
+
+is not valid. (But it's 0 so make no difference anyway.)
+
+# TODO: -1 ms from pair before this process?
 """
 function time_align(dt::DateTime, FT::Type{<:Period}, DT::Type{<:Union{DateTime, <:Period}}, df::DataFrame, key)
     df = copy(df)
@@ -73,4 +91,11 @@ function align(dt::DateTime, FT::Type{<:Period}, DT::Type{<:Union{DateTime, <:Pe
     ta = time_align(dt, FT, DT, d.df, time_key(FileType))
     println(FileType)
     return value_align(FileType, ta)
+end
+
+function _read_table(lines::AbstractVector{<:AbstractVector{<:AbstractString}}, headers)
+    buf = join(join.(lines, " "), "\n") |> IOBuffer
+    df = CSV.File(buf, header=false, delim=" ") |> DataFrame
+    rename!(df, headers)
+    return df
 end
