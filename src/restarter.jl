@@ -26,8 +26,8 @@ function create_simulation(restarter::Restarter, target=tempname())
             end
             cp(src_p, dst_p)
             @assert isfile(dst_p)
+            # @debug "copy file $src_p -> $dst_p"
         end
-        @debug "copy file $src_p -> $dst_p"
     end
 
     _create_simulation(replacer, target)

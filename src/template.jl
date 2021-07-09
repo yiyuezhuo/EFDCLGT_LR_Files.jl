@@ -6,9 +6,11 @@ struct SimulationTemplate <: RunnerFunc
     reference_time::DateTime
     total_begin::Day
     total_length::Day
+    FT::Type # EX: FT=Day => 1601.1 -> 1601.1 day 
+    DT::Type # EX: DT=Hour => rounded to Hour
 end
 
-function SimulationTemplate(input_root)
+function SimulationTemplate(input_root, FT::Type{<:Period}, DT::Type{<:Period})
     dir_root = dirname(input_root)
     model_name_vec = [name for name in readdir(dir_root) if endswith(name, ".model")]
     @assert length(model_name_vec) == 1
@@ -32,7 +34,7 @@ function SimulationTemplate(input_root)
     total_begin = Day(efdc.df_map["C03"][1, "TBEGIN"])
     total_length = Day(efdc.df_map["C03"][1, "NTC"])
 
-    return SimulationTemplate(input_root, exe_name, non_modified_files, reference_time, total_begin, total_length)
+    return SimulationTemplate(input_root, exe_name, non_modified_files, reference_time, total_begin, total_length, FT, DT)
 end
 
 function parent(t::SimulationTemplate)
@@ -97,3 +99,25 @@ end
 get_exe_path(r::Runner) = get_exe_path(parent(r))
 get_total_begin(T, r::Runner) = get_total_begin(T, parent(r))
 get_total_length(T, r::Runner) = get_total_length(T, parent(r))
+
+function convert_time(template::SimulationTemplate, time_vec::Vector{T}) where T <: Period
+    return time_vec - round(get_total_begin(Day, template), T) 
+end
+
+function convert_time(template::SimulationTemplate, ST::Type{<:Period}, DT::Type{<:Period}, time::AbstractFloat)
+    # return _convert_time(ST, DT, time) - round(get_total_begin(Day, template), T) 
+    return convert_time(template, _convert_time(ST, DT, time))
+end
+
+function convert_time(template::SimulationTemplate, ST::Type{Day}, ::Type{DateTime}, time::AbstractFloat)
+    delta = _convert_time(ST, time) # ms
+    return template.reference_time + delta
+end
+
+function time_align(template::SimulationTemplate, df::DataFrame, key)
+    return time_align(template.reference_time, template.FT, template.DT, df, key)
+end
+
+function align(template::SimulationTemplate, d::PureDataFrameFile)
+    return align(template.reference_time, template.FT, template.DT, d)
+end

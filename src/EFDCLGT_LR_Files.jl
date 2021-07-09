@@ -2,66 +2,41 @@ module EFDCLGT_LR_Files
 
 using Base: String
 using DataFrames
-export efdc_inp, wqini_inp, load, save, create_simulation, get_exe_path,
+export # file structs
+    AbstractFile, efdc_inp, wqini_inp, WQWCRST_OUT, WQWCTS_OUT, cumu_struct_outflow_out, aser_inp,
+    qbal_out,
+    # file methods
+    load, save, align, time_align, value_align, align,
+    # Runners
     Runner, SimulationTemplate, Replacer, Restarter,
-    AbstractFile, efdc_inp, wqini_inp, WQWCRST_OUT, WQWCTS_OUT,
+    # Runner methods
     set_begin_day!, get_begin_day, set_sim_length!, get_sim_length, is_restarting, set_restarting!,
-    add_begin_day!, copy_replacer, get_total_begin, get_total_length
+    add_begin_day!, copy_replacer, get_total_begin, get_total_length, convert_time,
+    # Utilities
+    create_simulation, get_exe_path
 
 using CSV
 using DataFrames
 using JSON
 using LightXML
 using Dates
+import TimeSeries # There're many methods which are conflicted with DataFrames
+using TimeSeries: TimeArray
 
-abstract type AbstractFile end
-
-function load(path, T::Type{<:AbstractFile})
-    open(path) do f
-        return load(f, T)
-    end
-end
-
-function load(::IO, ::Type{<:AbstractFile})
-    error("Unsupporedted load format $f")
-end
-
-function save(path, d::AbstractFile)
-    open(path, "w") do f
-        save(f, d)
-    end
-end
-
-function save(::IO, ::AbstractFile)
-    error("Unsupporedted save format $f")
-end
-
-function save(io::IO, d::Vector{String})
-    write(io, join(d, "\n"))
-    write(io, "\n")
-end
-
-function save(io::IO, d::DataFrame; header=false)
-    CSV.write(io, d, append=true, header=header, delim=" ")
-end
-
-name(typ::Type{<:AbstractFile}) = error("Name of $typ is undefined")
-
-include("io/master_input.jl")
-include("io/efdc_inp_io.jl")
-include("io/wqini_inp_WQWCRST_OUT_io.jl")
-include("io/WQWCTS_OUT.jl")
+include("utils.jl")
+include("io/io.jl")
 
 abstract type Runner end
 abstract type RunnerFunc <: Runner end;
 abstract type RunnerStateful <: Runner end;
 
+# https://discourse.julialang.org/t/broadcasting-structs-as-scalars/14310
+# TODO: Research broadcast interface details:
+# https://docs.julialang.org/en/v1/manual/interfaces/#man-interfaces-broadcasting
+Base.broadcastable(runner::Runner) = Ref(runner) 
+
 include("template.jl")
 include("replacer.jl")
 include("restarter.jl")
-
-using .efdc_inp_io
-using .wqini_inp_WQWCRST_OUT_io
-
 
 end # module

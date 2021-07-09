@@ -9,7 +9,7 @@ using Logging
 debug_logger = SimpleLogger(stdout, Logging.Debug)
 default_logger = global_logger()
 
-template = SimulationTemplate(ENV["WATER_ROOT"])
+template = SimulationTemplate(ENV["WATER_ROOT"], Day, Hour)
 
 @testset "EFDCLGT_LR_Files" begin
     @test name(efdc_inp) == "efdc.inp"

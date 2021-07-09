@@ -1,5 +1,5 @@
 
-module efdc_inp_io
+module _efdc_inp
 
 export efdc_inp
 using DataFrames
@@ -74,3 +74,5 @@ end
 name(::Type{efdc_inp}) = "efdc.inp"
 
 end
+
+using ._efdc_inp
