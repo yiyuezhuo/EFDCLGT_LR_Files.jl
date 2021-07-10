@@ -99,3 +99,8 @@ function _read_table(lines::AbstractVector{<:AbstractVector{<:AbstractString}}, 
     rename!(df, headers)
     return df
 end
+
+Base.getindex(d::AbstractFile, key::Symbol) = d[string(key)]
+function Base.getindex(d::AbstractFile, key::String)
+    error("Base.getindex is not supported for $(typeof(d))")
+end

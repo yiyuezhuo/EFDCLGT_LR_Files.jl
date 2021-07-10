@@ -76,31 +76,31 @@ end
 # If someone really need Int based operation, manipuate DataFrame directly.
 
 function set_begin_day!(r::Replacer, begin_r_day::Day)
-    C03 = r.replace_map[efdc_inp].df_map["C03"]
+    C03 = r.replace_map[efdc_inp]["C03"]
     C03[1, "TBEGIN"] = begin_r_day.value
     return r
 end
 
 function set_begin_day!(r::Replacer, begin_day::DateTime)
-    C03 = r.replace_map[efdc_inp].df_map["C03"]
+    C03 = r.replace_map[efdc_inp]["C03"]
     C03[1, "TBEGIN"] = Day(begin_day - r.template.reference_time).value
     return r
 end
 
 function set_sim_length!(r::Replacer, sim_length::Day)
-    C03 = r.replace_map[efdc_inp].df_map["C03"]
+    C03 = r.replace_map[efdc_inp]["C03"]
     C03[1, "NTC"] = sim_length.value
     return r
 end
 
 function set_sim_length!(r::Replacer, end_day::DateTime)
-    C03 = r.replace_map[efdc_inp].df_map["C03"]
+    C03 = r.replace_map[efdc_inp]["C03"]
     C03[1, "NTC"] = Day(end_day - r.template.reference_time).value - C03[1, "TBEGIN"]
     return r
 end
 
 function get_begin_day(::Type{Day}, r::Replacer)
-    C03 = r.replace_map[efdc_inp].df_map["C03"]
+    C03 = r.replace_map[efdc_inp]["C03"]
     return Day(C03[1, "TBEGIN"])
 end
 
@@ -109,7 +109,7 @@ function get_begin_day(::Type{DateTime}, r::Replacer)
 end
 
 function get_sim_length(::Type{Day}, r::Replacer)
-    C03 = r.replace_map[efdc_inp].df_map["C03"]
+    C03 = r.replace_map[efdc_inp]["C03"]
     return Day(C03[1, "NTC"])
 end
 
@@ -118,7 +118,7 @@ function get_sim_length(::Type{DateTime}, r::Replacer)
 end
 
 function is_restarting(r::Replacer)
-    ISRESTI = r.replace_map[efdc_inp].df_map["C02"][1, "ISRESTI"]
+    ISRESTI = r.replace_map[efdc_inp]["C02"][1, "ISRESTI"]
     if ISRESTI == 1
         return true
     elseif ISRESTI == 0
@@ -129,7 +129,7 @@ function is_restarting(r::Replacer)
 end
 
 function set_restarting!(r::Replacer, restarting::Bool)
-    C02 = r.replace_map[efdc_inp].df_map["C02"]
+    C02 = r.replace_map[efdc_inp]["C02"]
     C02[1, "ISRESTI"] = restarting ? 1 : 0
     return r
 end

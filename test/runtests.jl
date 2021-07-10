@@ -36,7 +36,7 @@ template = SimulationTemplate(ENV["WATER_ROOT"], Day, Hour)
             @test isdir(dst_root)
 
             efdc = load(joinpath(dst_root, "efdc.inp"), efdc_inp)
-            @test efdc.df_map["C03"][1, "NTC"] == 2
+            @test efdc["C03"][1, "NTC"] == 2
 
             save(joinpath(dst_root, name(efdc_inp)), efdc)
             save(

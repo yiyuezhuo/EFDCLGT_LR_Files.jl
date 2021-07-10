@@ -31,8 +31,8 @@ function SimulationTemplate(input_root, FT::Type{<:Period}, DT::Type{<:Period})
     end
 
     efdc = load(joinpath(input_root, name(efdc_inp)), efdc_inp)
-    total_begin = Day(efdc.df_map["C03"][1, "TBEGIN"])
-    total_length = Day(efdc.df_map["C03"][1, "NTC"])
+    total_begin = Day(efdc["C03"][1, "TBEGIN"])
+    total_length = Day(efdc["C03"][1, "NTC"])
 
     return SimulationTemplate(input_root, exe_name, non_modified_files, reference_time, total_begin, total_length, FT, DT)
 end

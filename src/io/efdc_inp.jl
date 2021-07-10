@@ -57,7 +57,11 @@ const _parse = generate_parse(card_info_dsl, forward_lookup_map, length_map_init
 
 struct efdc_inp <: AbstractFile
     node_list::Vector{Union{DataFrame, Vector{String}}}
-    df_map::Dict{String, DataFrame}
+    _df_map::Dict{String, DataFrame}
+end
+
+function Base.getindex(d::efdc_inp, index::String)
+    return d._df_map[index]
 end
 
 function load(io::IO, ::Type{efdc_inp})

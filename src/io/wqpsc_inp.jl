@@ -37,9 +37,19 @@ end
 
 struct wqpsc_inp <: AbstractFile
     node_list::Vector{Concentration}
-    df_map::Dict{String, DataFrame}
+    # df_map::Dict{String, DataFrame}
 end
 
+function Base.getindex(d::wqpsc_inp, key::String)
+    for node in d.node_list
+        if name(node) == key
+            return node.df
+        end
+    end
+    error("can't find $key")
+end
+
+#=
 function wqpsc_inp(node_list::Vector{Concentration})
     df_map = Dict{String, DataFrame}()
     for node in node_list
@@ -47,6 +57,7 @@ function wqpsc_inp(node_list::Vector{Concentration})
     end
     return wqpsc_inp(node_list, df_map)
 end
+=#
 
 name(::Type{wqpsc_inp}) = "wqpsc.inp"
 time_key(::Type{wqpsc_inp}) = :time

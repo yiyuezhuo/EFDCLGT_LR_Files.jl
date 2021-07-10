@@ -54,9 +54,20 @@ end
 
 struct qser_inp <: AbstractFile
     node_list::Vector{Union{Flow, Vector{String}}}
-    df_map::Dict{Tuple{String, Int}, DataFrame}
+    # df_map::Dict{Tuple{String, Int}, DataFrame}
 end
 
+function Base.getindex(d::qser_inp, key::Tuple{String, Int})
+    key_name, key_idx = key
+    for node in d.node_list
+        if node isa Flow && name(node) == key_name
+            return node.dl_vec[key_idx]
+        end
+    end
+    error("Can't find key $key")
+end
+
+#=
 function qser_inp(node_list::Vector{Union{Flow, Vector{String}}})
     df_map = Dict{Tuple{String, Int}, DataFrame}()
     for node in node_list
@@ -69,6 +80,7 @@ function qser_inp(node_list::Vector{Union{Flow, Vector{String}}})
     end
     return qser_inp(node_list, df_map)
 end
+=#
 
 name(::Type{qser_inp}) = "qser.inp"
 time_key(::Type{qser_inp}) = :time
