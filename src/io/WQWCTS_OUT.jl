@@ -16,3 +16,18 @@ function save(io::IO, d::WQWCTS_OUT)
     save(io, d.df, header=true)
 end
 =#
+
+function value_align(::Type{WQWCTS_OUT}, ta::TimeArray)
+    ta = ta[TimeSeries.colnames(ta)[5:end]] # remove I, J, K, TIME columns
+    ta = TimeSeries.moving(mean, ta, 2, padding=true) |> TimeSeries.lead # average discrete observation to get period estimation
+    return ta
+end
+
+function align(dt::DateTime, FT::Type{<:Period}, DT::Type{<:Union{DateTime, <:Period}}, d::WQWCTS_OUT)
+    rd = Dict{Tuple{Int, Int, Int}, TimeArray}()
+    for (k, df) in pairs(groupby(d.df, [:I, :J, :K]))
+        ta = time_align(dt, FT, DT, df, time_key(WQWCTS_OUT))
+        rd[k.I, k.J, k.K] = value_align(WQWCTS_OUT, ta)
+    end
+    return rd
+end

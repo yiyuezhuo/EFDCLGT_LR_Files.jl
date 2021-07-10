@@ -22,19 +22,12 @@ using LightXML
 using Dates
 import TimeSeries # There're many methods which are conflicted with DataFrames
 using TimeSeries: TimeArray
+using Statistics
 
 include("utils.jl")
 include("io/io.jl")
 
-abstract type Runner end
-abstract type RunnerFunc <: Runner end;
-abstract type RunnerStateful <: Runner end;
-
-# https://discourse.julialang.org/t/broadcasting-structs-as-scalars/14310
-# TODO: Research broadcast interface details:
-# https://docs.julialang.org/en/v1/manual/interfaces/#man-interfaces-broadcasting
-Base.broadcastable(runner::Runner) = Ref(runner) 
-
+include("abstract_runner.jl")
 include("template.jl")
 include("replacer.jl")
 include("restarter.jl")

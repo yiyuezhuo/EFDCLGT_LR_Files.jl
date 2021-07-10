@@ -3,7 +3,7 @@ struct Restarter <: RunnerFunc
     replacer::Replacer
     root_completed::String
     Restarter(replacer::Replacer, root_completed::String) = begin
-        @assert efdc_inp in keys(replacer.replace_map)
+        @assert efdc_inp in keys(replacer)
         @assert is_restarting(replacer)
         new(replacer, root_completed)
     end
@@ -13,7 +13,7 @@ parent(r::Restarter) = r.replacer
 
 function create_simulation(restarter::Restarter, target=tempname())
     replacer = restarter.replacer
-    name_set = Set([name(ftyp) for ftyp in keys(replacer.replace_map)])
+    name_set = Set([name(ftyp) for ftyp in keys(replacer)])
 
     create_simulation(replacer.template, target)
 

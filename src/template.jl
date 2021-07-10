@@ -8,9 +8,10 @@ struct SimulationTemplate <: RunnerFunc
     total_length::Day
     FT::Type # EX: FT=Day => 1601.1 -> 1601.1 day 
     DT::Type # EX: DT=Hour => rounded to Hour
+    _share_map::Dict{Type, AbstractFile} # share_map is expected to not be modified.
 end
 
-function SimulationTemplate(input_root, FT::Type{<:Period}, DT::Type{<:Period})
+function SimulationTemplate(input_root, FT::Type{<:Period}, DT::Type{<:Period}, share_vec::AbstractVector{<:Type})
     dir_root = dirname(input_root)
     model_name_vec = [name for name in readdir(dir_root) if endswith(name, ".model")]
     @assert length(model_name_vec) == 1
@@ -34,15 +35,22 @@ function SimulationTemplate(input_root, FT::Type{<:Period}, DT::Type{<:Period})
     total_begin = Day(efdc["C03"][1, "TBEGIN"])
     total_length = Day(efdc["C03"][1, "NTC"])
 
-    return SimulationTemplate(input_root, exe_name, non_modified_files, reference_time, total_begin, total_length, FT, DT)
+    share_map = Dict{Type{<:AbstractFile}, AbstractFile}()
+    for ftype in share_vec
+        share_map[ftype] = load(joinpath(input_root, name(ftype)), ftype)
+    end
+
+    return SimulationTemplate(input_root, exe_name, non_modified_files, reference_time, total_begin, total_length, FT, DT, share_map)
 end
+
+SimulationTemplate(input_root, FT::Type{<:Period}, DT::Type{<:Period}) = SimulationTemplate(input_root, FT, DT, Type{<:AbstractFile}[])
 
 function parent(t::SimulationTemplate)
     error("SimulationTemplate is most respectful elder toad! How dare Xi, the white pig!")
 end
 
 function create_simulation(func::Function, template_like)
-    target=tempname()
+    target = tempname()
     create_simulation(template_like, target)
     res = func(target)
     rm(target, recursive=true)
@@ -73,7 +81,7 @@ const restart_map = Dict(
 # the grand template may don't have restart files.
 
 function Base.show(io::IO, t::SimulationTemplate)
-    print(io, "SimulationTempate(input_root=$(t.input_root), exe_name=$(t.exe_name), reference_time=$(t.reference_time), length(non_modified_files)=$(length(t.non_modified_files)))")
+    print(io, "SimulationTempate(input_root=$(t.input_root), exe_name=$(t.exe_name), reference_time=$(t.reference_time), length(non_modified_files)=$(length(t.non_modified_files))), keys->$(keys(t))")
 end
 
 function get_exe_path(t::SimulationTemplate)
@@ -118,6 +126,8 @@ function time_align(template::SimulationTemplate, df::DataFrame, key)
     return time_align(template.reference_time, template.FT, template.DT, df, key)
 end
 
-function align(template::SimulationTemplate, d::PureDataFrameFile)
+function align(template::SimulationTemplate, d)
     return align(template.reference_time, template.FT, template.DT, d)
 end
+
+master_map(t::SimulationTemplate) = t._share_map

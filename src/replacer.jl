@@ -1,18 +1,19 @@
 
 struct Replacer <: RunnerFunc
     template::SimulationTemplate
-    replace_map::Dict{Type, AbstractFile}
+    _replace_map::Dict{Type, AbstractFile}
 end
 
 function Replacer(template::SimulationTemplate, replace_vec::AbstractVector{<:Type})
-    replace_map = Dict{Type, AbstractFile}()
+    _replace_map = Dict{Type, AbstractFile}()
     for ftype in replace_vec
         p = joinpath(template.input_root, name(ftype))
-        replace_map[ftype] = load(p, ftype)
+        _replace_map[ftype] = load(p, ftype)
     end
-    return Replacer(template, replace_map)
+    return Replacer(template, _replace_map)
 end
 
+master_map(t::Replacer) = t._replace_map
 
 function Replacer(template::SimulationTemplate)
     return Replacer(template, Type[])
@@ -21,7 +22,7 @@ end
 parent(r::Replacer) = r.template
 
 function _create_simulation(replacer::Replacer, target=tempname())
-    for (ftype, d) in replacer.replace_map
+    for (ftype, d) in replacer
         fp = joinpath(target, name(ftype))
         if isfile(fp)
             rm(fp)
@@ -38,9 +39,9 @@ function create_simulation(replacer::Replacer, target=tempname())
 end
 
 function Base.show(io::IO, r::Replacer)
-    base_text = "template=$(r.template), keys(replace_map)=$(keys(r.replace_map))"
+    base_text = "template=$(r.template), keys=>$(keys(r))"
     extra_text_vec = String[]
-    if efdc_inp in keys(r.replace_map)
+    if efdc_inp in keys(r)
         begin_day_day = get_begin_day(Day, r)
         begin_day_date = get_begin_day(DateTime, r)
 
@@ -61,46 +62,46 @@ end
 Replacer's copy will not copy template.
 """
 function Base.copy(r::Replacer)
-    return Replacer(r.template, deepcopy(r.replace_map))
+    return Replacer(r.template, deepcopy(r._replace_map))
 end
 
 function Base.copy(r::Replacer, copy_keys::AbstractVector{<:Type})
-    replace_map = copy(r.replace_map) # shallow copy
+    _replace_map = copy(r._replace_map) # shallow copy
     for key in copy_keys
-        replace_map[key] = deepcopy(r.replace_map[key])
+        _replace_map[key] = deepcopy(r._replace_map[key])
     end
-    return Replacer(r.template, replace_map)
+    return Replacer(r.template, _replace_map)
 end
 
 # We will not implement `Int` dispatch to prevent ambiguous problem which had happened in Python version.
 # If someone really need Int based operation, manipuate DataFrame directly.
 
 function set_begin_day!(r::Replacer, begin_r_day::Day)
-    C03 = r.replace_map[efdc_inp]["C03"]
+    C03 = r[efdc_inp]["C03"]
     C03[1, "TBEGIN"] = begin_r_day.value
     return r
 end
 
 function set_begin_day!(r::Replacer, begin_day::DateTime)
-    C03 = r.replace_map[efdc_inp]["C03"]
+    C03 = r[efdc_inp]["C03"]
     C03[1, "TBEGIN"] = Day(begin_day - r.template.reference_time).value
     return r
 end
 
 function set_sim_length!(r::Replacer, sim_length::Day)
-    C03 = r.replace_map[efdc_inp]["C03"]
+    C03 = r[efdc_inp]["C03"]
     C03[1, "NTC"] = sim_length.value
     return r
 end
 
 function set_sim_length!(r::Replacer, end_day::DateTime)
-    C03 = r.replace_map[efdc_inp]["C03"]
+    C03 = r[efdc_inp]["C03"]
     C03[1, "NTC"] = Day(end_day - r.template.reference_time).value - C03[1, "TBEGIN"]
     return r
 end
 
 function get_begin_day(::Type{Day}, r::Replacer)
-    C03 = r.replace_map[efdc_inp]["C03"]
+    C03 = r[efdc_inp]["C03"]
     return Day(C03[1, "TBEGIN"])
 end
 
@@ -109,7 +110,7 @@ function get_begin_day(::Type{DateTime}, r::Replacer)
 end
 
 function get_sim_length(::Type{Day}, r::Replacer)
-    C03 = r.replace_map[efdc_inp]["C03"]
+    C03 = r[efdc_inp]["C03"]
     return Day(C03[1, "NTC"])
 end
 
@@ -118,7 +119,7 @@ function get_sim_length(::Type{DateTime}, r::Replacer)
 end
 
 function is_restarting(r::Replacer)
-    ISRESTI = r.replace_map[efdc_inp]["C02"][1, "ISRESTI"]
+    ISRESTI = r[efdc_inp]["C02"][1, "ISRESTI"]
     if ISRESTI == 1
         return true
     elseif ISRESTI == 0
@@ -129,7 +130,7 @@ function is_restarting(r::Replacer)
 end
 
 function set_restarting!(r::Replacer, restarting::Bool)
-    C02 = r.replace_map[efdc_inp]["C02"]
+    C02 = r[efdc_inp]["C02"]
     C02[1, "ISRESTI"] = restarting ? 1 : 0
     return r
 end

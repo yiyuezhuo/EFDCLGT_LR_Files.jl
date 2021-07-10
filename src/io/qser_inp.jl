@@ -34,16 +34,8 @@ struct Flow
     dl_vec::Vector{FlowLevel}
 end
 
-#=
-function Flow(word_vec::AbstractVector{<:AbstractVector{<:AbstractString}})
-    # @show length(word_vec) word_vec[1] word_vec[2]
-    headers = word_vec[1]
-    df = DataFrame(parse.(Float64, reduce(vcat, word_vec[2:end])), ["time", "flow"])
-    return Flow(headers, df)
-end
-=#
-
 name(flow::Flow) = flow.headers[end]
+
 function save(io::IO, flow::Flow)
     write(io, join(flow.headers, " "))
     write(io, "\n")
@@ -61,26 +53,25 @@ function Base.getindex(d::qser_inp, key::Tuple{String, Int})
     key_name, key_idx = key
     for node in d.node_list
         if node isa Flow && name(node) == key_name
-            return node.dl_vec[key_idx]
+            return node.dl_vec[key_idx].df
         end
     end
     error("Can't find key $key")
 end
 
-#=
-function qser_inp(node_list::Vector{Union{Flow, Vector{String}}})
-    df_map = Dict{Tuple{String, Int}, DataFrame}()
-    for node in node_list
+Base.getindex(d::qser_inp, s::String, i::Int) = d[(s, i)]
+
+function Base.keys(d::qser_inp)
+    rv = Tuple{String, Int}[]
+    for node in d.node_list
         if node isa Flow
             for dl in node.dl_vec
-                # @show length(node_list) node.headers dl.level size(dl.df)
-                df_map[name(node), dl.level] = dl.df
+                push!(rv, (name(node), dl.level))
             end
         end
     end
-    return qser_inp(node_list, df_map)
+    return rv
 end
-=#
 
 name(::Type{qser_inp}) = "qser.inp"
 time_key(::Type{qser_inp}) = :time
@@ -145,3 +136,21 @@ function save(io::IO, d::qser_inp)
     end
 end
 
+function value_align(::Type{qser_inp}, ta::TimeArray)
+    # @show ta
+    return ta["flow"] .* 3600  # m3/s -> m3/h
+end
+
+function align(dt::DateTime, FT::Type{<:Period}, DT::Type{<:Union{DateTime, <:Period}}, d::qser_inp)
+    rd = Dict{Tuple{String, Int}, TimeArray}()
+    for node in d.node_list
+        if node isa Flow
+            for dl in node.dl_vec
+                df = dl.df
+                ta = time_align(dt, FT, DT, df, time_key(qser_inp))
+                rd[name(node), dl.level] = value_align(qser_inp, ta)
+            end
+        end
+    end
+    return rd
+end

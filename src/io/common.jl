@@ -44,6 +44,53 @@ function save(io::IO, d::PureDataFrameFile)
     save(io, d.df, header=true)
 end
 
+function resample_nearest(dtv::Vector{DateTime}, r::StepRange, delta::Period)
+    dt = r.start
+    
+    dt_building = DateTime[]
+    idx_building = Int[]
+
+    for idx in 2:length(dtv)
+        while dt + delta < dtv[idx-1]
+            dt += r.step
+        end
+        while dt + delta < dtv[idx]
+            push!(dt_building, dt)
+            push!(idx_building, idx-1)
+            
+            dt += r.step
+        end
+    end
+    while dt < r.end
+        push!(dt_building, dt)
+        push!(idx_building, length(dtv))
+        
+        dt += r.step
+    end
+    return dt_building, idx_building
+end
+
+function resample_nearest(dtv::Vector{DateTime}, step::PT, delta::Period) where PT <: Period
+    r_begin = round(dtv[1], T)
+    r_end = round(dtv[end], T)
+    return resample_nearest(dtv, r_begin:step:r_end, delta)
+end
+
+function time_align2(dt::DateTime, FT::Type{<:Period}, step::Period, df::AbstractDataFrame, key; middle=false)
+    delta = middle ? Millisecond(step) / 2 : Millisecond(0)
+
+    dtv = convert_time.(dt, FT, DateTime, df[!, key])
+    tv, idx_vec = resample_nearest(dtv, step, delta)
+    mat = Matrix{Float64}(undef, length(tv), size(df, 2))
+
+    for (idx, k) in enumerate(names(df))
+        @views copy!(mat[idx_vec, idx], df[idx_vec, k])
+    end
+    ta = TimeArray(tv, mat, names(df))
+
+    return ta
+end
+
 """
 EX:
 time_align(df, "time", Day, DateTime) # "lossless" datetime
@@ -67,10 +114,21 @@ is not valid. (But it's 0 so make no difference anyway.)
 
 # TODO: -1 ms from pair before this process?
 """
-function time_align(dt::DateTime, FT::Type{<:Period}, DT::Type{<:Union{DateTime, <:Period}}, df::DataFrame, key)
+function time_align(dt::DateTime, FT::Type{<:Period}, DT::Type{<:Union{DateTime, <:Period}}, df::AbstractDataFrame, key)
+    #=
     df = copy(df)
     df[!, :date] = convert_time.(dt, FT, DT, df[!, key])
     ta = TimeArray(df, timestamp=:date)
+    =#
+    # The above implementation use mapreduce, resulting Any type, the performance is terrible.
+
+    tv = convert_time.(dt, FT, DT, df[!, key])
+    # mat = mapreduce((n)->df[!, n], hcat, names(df))
+    mat = Matrix{Float64}(undef, size(df, 1), size(df, 2))
+    for (idx, k) in enumerate(names(df))
+        @views copy!(mat[1:end, idx], df[!, k])
+    end
+    ta = TimeArray(tv, mat, names(df))
 
     mask = Vector{Bool}(undef, length(ta))
     ts = TimeSeries.timestamp(ta)
@@ -83,13 +141,15 @@ function time_align(dt::DateTime, FT::Type{<:Period}, DT::Type{<:Union{DateTime,
     return ta_dedup
 end
 
-function value_align(::Type{<:AbstractFile}, ta::TimeArray)
-    error("align is unsupported for $(typeof(d))")
+"""
+value_align will rescale units and possibly drop the float time column for convenient
+"""
+function value_align(T::Type{<:AbstractFile}, ::TimeArray)
+    error("value_align is unsupported for $T")
 end
 
 function align(dt::DateTime, FT::Type{<:Period}, DT::Type{<:Union{DateTime, <:Period}}, d::FileType) where FileType <: PureDataFrameFile
     ta = time_align(dt, FT, DT, d.df, time_key(FileType))
-    println(FileType)
     return value_align(FileType, ta)
 end
 
