@@ -1,7 +1,7 @@
 
 module _wqpsc_inp
 
-import ..EFDCLGT_LR_Files: AbstractFile, load, save, CSV, name, align, value_align, TimeArray, time_align, TimeSeries
+import ..EFDCLGT_LR_Files: AbstractFile, load, save, CSV, name, align, value_align, TimeArray, time_align2, TimeSeries
 export wqpsc_inp
 
 using DataFrames
@@ -103,7 +103,7 @@ function align(dt::DateTime, FT::Type{<:Period}, DT::Type{<:Union{DateTime, <:Pe
     rd = Dict{String, TimeArray}()
     for node in d.node_list
         df = node.df
-        ta = time_align(dt, FT, DT, df, time_key(wqpsc_inp))
+        ta = time_align2(dt, FT, DT, df, time_key(wqpsc_inp))
         ta = value_align(wqpsc_inp, ta)
         rd[name(node)] = ta
     end

@@ -138,7 +138,7 @@ end
 
 function value_align(::Type{qser_inp}, ta::TimeArray)
     # @show ta
-    return ta["flow"] .* 3600  # m3/s -> m3/h
+    return ta[:flow] .* 3600  # m3/s -> m3/h
 end
 
 function align(dt::DateTime, FT::Type{<:Period}, DT::Type{<:Union{DateTime, <:Period}}, d::qser_inp)
@@ -147,7 +147,7 @@ function align(dt::DateTime, FT::Type{<:Period}, DT::Type{<:Union{DateTime, <:Pe
         if node isa Flow
             for dl in node.dl_vec
                 df = dl.df
-                ta = time_align(dt, FT, DT, df, time_key(qser_inp))
+                ta = time_align2(dt, FT, DT, df, time_key(qser_inp))
                 rd[name(node), dl.level] = value_align(qser_inp, ta)
             end
         end

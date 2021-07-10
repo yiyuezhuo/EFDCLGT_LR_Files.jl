@@ -5,11 +5,12 @@ using EFDCLGT_LR_Files: name
 
 using Dates
 using Logging
+using TimeSeries
 
 debug_logger = SimpleLogger(stdout, Logging.Debug)
 default_logger = global_logger()
 
-template = SimulationTemplate(ENV["WATER_ROOT"], Day, Hour)
+template = SimulationTemplate(ENV["WATER_ROOT"], Day, Hour, [qser_inp, wqpsc_inp, WQWCTS_OUT, cumu_struct_outflow_out])
 
 @testset "EFDCLGT_LR_Files" begin
     @test name(efdc_inp) == "efdc.inp"
@@ -51,6 +52,30 @@ template = SimulationTemplate(ENV["WATER_ROOT"], Day, Hour)
         end
 
         @test !isdir(dst_root_ext)
+    end
+
+    ad = Dict(key=>align(template, d) for (key, d) in template)
+
+    size_vec = Int[]
+    begin_vec = DateTime[]
+    end_vec = DateTime[]
+
+    for a in values(ad)
+        if a isa TimeArray
+            push!(size_vec, size(a, 1))
+            push!(begin_vec, timestamp(a)[1])
+            push!(end_vec, timestamp(a)[end])
+        else
+            for aa in values(a)
+                push!(size_vec, size(aa, 1))
+                push!(begin_vec, timestamp(aa)[1])
+                push!(end_vec, timestamp(aa)[end])    
+            end
+        end
+    end
+
+    for same_vec in [size_vec, begin_vec, end_vec]
+        @test all(same_vec[1] .== same_vec[2:end])
     end
 
 end

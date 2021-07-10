@@ -61,7 +61,7 @@ function resample_nearest(dtv::Vector{DateTime}, r::StepRange, delta::Period)
             dt += r.step
         end
     end
-    while dt < r.end
+    while dt < r.stop
         push!(dt_building, dt)
         push!(idx_building, length(dtv))
         
@@ -71,12 +71,12 @@ function resample_nearest(dtv::Vector{DateTime}, r::StepRange, delta::Period)
 end
 
 function resample_nearest(dtv::Vector{DateTime}, step::PT, delta::Period) where PT <: Period
-    r_begin = round(dtv[1], T)
-    r_end = round(dtv[end], T)
+    r_begin = round(dtv[1], PT)
+    r_end = round(dtv[end], PT)
     return resample_nearest(dtv, r_begin:step:r_end, delta)
 end
 
-function time_align2(dt::DateTime, FT::Type{<:Period}, step::Period, df::AbstractDataFrame, key; middle=false)
+function time_align2(dt::DateTime, FT::Type{<:Period}, step::Period, df::AbstractDataFrame, key; middle=true)
     delta = middle ? Millisecond(step) / 2 : Millisecond(0)
 
     dtv = convert_time.(dt, FT, DateTime, df[!, key])
@@ -84,11 +84,16 @@ function time_align2(dt::DateTime, FT::Type{<:Period}, step::Period, df::Abstrac
     mat = Matrix{Float64}(undef, length(tv), size(df, 2))
 
     for (idx, k) in enumerate(names(df))
-        @views copy!(mat[idx_vec, idx], df[idx_vec, k])
+        @views copy!(mat[:, idx], df[idx_vec, k])
     end
     ta = TimeArray(tv, mat, names(df))
 
     return ta
+end
+
+function time_align2(dt::DateTime, FT::Type{<:Period}, DT::Type{<:Period}, df::AbstractDataFrame, key; middle=true)
+    step = DT(1)
+    return time_align2(dt, FT, step, df, key; middle=middle)
 end
 
 """
