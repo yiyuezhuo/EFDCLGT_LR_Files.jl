@@ -1,6 +1,7 @@
+abstract type AbstractSimulationTemplate <: RunnerFunc end
 
-struct SimulationTemplate <: RunnerFunc
-    input_root::String
+struct SimulationTemplate <: AbstractSimulationTemplate
+    _input_root::String
     exe_name::String
     non_modified_files::Vector{String}
     reference_time::DateTime
@@ -45,8 +46,28 @@ end
 
 SimulationTemplate(input_root, FT::Type{<:Period}, DT::Type{<:Period}) = SimulationTemplate(input_root, FT, DT, Type{<:AbstractFile}[])
 
-function parent(t::SimulationTemplate)
-    error("SimulationTemplate is most respectful elder toad! How dare Xi, the white pig!")
+function get_file_path(t::SimulationTemplate, file_name::String)
+    return joinpath(t._input_root, file_name)
+end
+
+function _log_create_simulation(t::SimulationTemplate, target)
+    @debug "symlink env: $(t._input_root) -> $target"
+end
+
+function Base.show(io::IO, t::SimulationTemplate)
+    print(io, "SimulationTempate(_input_root=$(t._input_root), exe_name=$(t.exe_name), reference_time=$(t.reference_time), length(non_modified_files)=$(length(t.non_modified_files))), keys->$(keys(t))")
+end
+
+function get_file_path(t::AbstractSimulationTemplate, ftype::Type{<:AbstractFile})
+    return get_file_path(t, name(ftype))
+end
+
+function load(t::AbstractSimulationTemplate, ftype::Type{<:AbstractFile})
+    return load(get_file_path(t, ftype), ftype)
+end
+
+function parent(t::AbstractSimulationTemplate)
+    error("SimulationTemplate is most respectful elder toad! How dare the dumb white pig!")
 end
 
 function create_simulation(func::Function, template_like)
@@ -57,50 +78,37 @@ function create_simulation(func::Function, template_like)
     return res
 end
 
-function create_simulation(template::SimulationTemplate, target=tempname())
+function create_simulation(template::AbstractSimulationTemplate, target=tempname())
     if !isdir(target)
         mkdir(target)
     end
     # for file_name in [template.non_modified_files; [template.exe_name]]
     for file_name in template.non_modified_files
-        src_p = joinpath(template.input_root, file_name)
+        src_p = get_file_path(template, file_name)
         dst_p = joinpath(target, file_name)
         symlink(src_p, dst_p)
     end
-    @debug "symlink env: $(template.input_root) -> $target"
+    _log_create_simulation(template, target)
     return target
 end
 
-const restart_map = Dict(
-    "RESTART.OUT" => "RESTART.INP",
-    "TEMPBRST.OUT" => "TEMPB.RST",
-    "WQWCRST.OUT" => "wqini.inp"
-)
-
-# We will not define a dispatch on template to use `template.input_root` since 
-# the grand template may don't have restart files.
-
-function Base.show(io::IO, t::SimulationTemplate)
-    print(io, "SimulationTempate(input_root=$(t.input_root), exe_name=$(t.exe_name), reference_time=$(t.reference_time), length(non_modified_files)=$(length(t.non_modified_files))), keys->$(keys(t))")
+function get_exe_path(t::AbstractSimulationTemplate)
+    return joinpath(t._input_root, t.exe_name)
 end
 
-function get_exe_path(t::SimulationTemplate)
-    return joinpath(t.input_root, t.exe_name)
-end
-
-function get_total_begin(::Type{Day}, t::SimulationTemplate)
+function get_total_begin(::Type{Day}, t::AbstractSimulationTemplate)
     return t.total_begin
 end
 
-function get_total_begin(::Type{DateTime}, t::SimulationTemplate)
+function get_total_begin(::Type{DateTime}, t::AbstractSimulationTemplate)
     return t.reference_time + t.total_begin
 end
 
-function get_total_length(::Type{Day}, t::SimulationTemplate)
+function get_total_length(::Type{Day}, t::AbstractSimulationTemplate)
     return t.total_length
 end
 
-function get_total_length(::Type{DateTime}, t::SimulationTemplate)
+function get_total_length(::Type{DateTime}, t::AbstractSimulationTemplate)
     return t.reference_time + t.total_begin + t.total_length
 end
 
@@ -108,26 +116,54 @@ get_exe_path(r::Runner) = get_exe_path(parent(r))
 get_total_begin(T, r::Runner) = get_total_begin(T, parent(r))
 get_total_length(T, r::Runner) = get_total_length(T, parent(r))
 
-function convert_time(template::SimulationTemplate, time_vec::Vector{T}) where T <: Period
+function convert_time(template::AbstractSimulationTemplate, time_vec::Vector{T}) where T <: Period
     return time_vec - round(get_total_begin(Day, template), T) 
 end
 
-function convert_time(template::SimulationTemplate, ST::Type{<:Period}, DT::Type{<:Period}, time::AbstractFloat)
+function convert_time(template::AbstractSimulationTemplate, ST::Type{<:Period}, DT::Type{<:Period}, time::AbstractFloat)
     # return _convert_time(ST, DT, time) - round(get_total_begin(Day, template), T) 
     return convert_time(template, _convert_time(ST, DT, time))
 end
 
-function convert_time(template::SimulationTemplate, ST::Type{Day}, ::Type{DateTime}, time::AbstractFloat)
+function convert_time(template::AbstractSimulationTemplate, ST::Type{Day}, ::Type{DateTime}, time::AbstractFloat)
     delta = _convert_time(ST, time) # ms
     return template.reference_time + delta
 end
 
-function time_align(template::SimulationTemplate, df::DataFrame, key)
+function time_align(template::AbstractSimulationTemplate, df::DataFrame, key)
     return time_align(template.reference_time, template.FT, template.DT, df, key)
 end
 
-function align(template::SimulationTemplate, d)
+function align(template::AbstractSimulationTemplate, d)
     return align(template.reference_time, template.FT, template.DT, d)
 end
 
-master_map(t::SimulationTemplate) = t._share_map
+master_map(t::AbstractSimulationTemplate) = t._share_map
+
+struct SubSimulationTemplate <: AbstractSimulationTemplate
+    template::AbstractSimulationTemplate
+    _override_root::String
+end
+
+function Base.getproperty(t::SubSimulationTemplate, key::Symbol)
+    if key in fieldnames(SubSimulationTemplate)
+        return getfield(t, key)
+    end
+    return getfield(t.template, key)
+end
+
+function get_file_path(t::SubSimulationTemplate, file_name::String)
+    p = joinpath(t._override_root, file_name)
+    if isfile(p)
+        return p
+    end
+    return get_file_path(t.template, file_name)
+end
+
+function _log_create_simulation(t::SubSimulationTemplate, target)
+    @debug "symlink env: $((t.template._input_root, t._override_root)) -> $target"
+end
+
+function Base.show(io::IO, t::SubSimulationTemplate)
+    print(io, "SubSimulationTemplate(template=$(t.template), _override_root=$(t._override_root))")
+end

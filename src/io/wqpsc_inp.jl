@@ -40,6 +40,10 @@ function Base.getindex(d::wqpsc_inp, key::String)
     error("can't find $key")
 end
 
+function Base.keys(d::wqpsc_inp)
+    return [name(node) for node in d.node_list]
+end
+
 name(::Type{wqpsc_inp}) = "wqpsc.inp"
 time_key(::Type{wqpsc_inp}) = :TIME
 

@@ -42,10 +42,13 @@ template = SimulationTemplate(ENV["WATER_ROOT"], Day, Hour, [qser_inp, wqpsc_inp
             save(joinpath(dst_root, name(efdc_inp)), efdc)
             save(
                 joinpath(dst_root, name(wqini_inp)),
+                load(template, wqini_inp)
+                #=
                 load(
-                    joinpath(template.input_root, name(wqini_inp)),
+                    get_file_Path(template, name(wqini_inp)),
                     wqini_inp
                 )
+                =#
             )
 
             dst_root_ext = dst_root
@@ -77,5 +80,19 @@ template = SimulationTemplate(ENV["WATER_ROOT"], Day, Hour, [qser_inp, wqpsc_inp
     for same_vec in [size_vec, begin_vec, end_vec]
         @test all(same_vec[1] .== same_vec[2:end])
     end
+
+    td = tempname()
+    mkdir(td)
+
+    qser = template[qser_inp]
+    df = qser[keys(qser)[1]]
+    df[1, "flow"] = 8964 # It's not recommended to modify "shared" content of template, here it's for test purpose
+    save(joinpath(td, "qser.inp"), template[qser_inp])
+    sub_template = SubSimulationTemplate(template, td)
+    qser2 = load(sub_template, qser_inp)
+    df2 = qser2[keys(qser2)[1]]
+    @test df[1, "flow"] == 8964
+
+    rm(td, recursive=true)
 
 end

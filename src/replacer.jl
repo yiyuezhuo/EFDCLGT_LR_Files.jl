@@ -7,8 +7,11 @@ end
 function Replacer(template::SimulationTemplate, replace_vec::AbstractVector{<:Type})
     _replace_map = Dict{Type, AbstractFile}()
     for ftype in replace_vec
-        p = joinpath(template.input_root, name(ftype))
-        _replace_map[ftype] = load(p, ftype)
+        # p = joinpath(template.input_root, name(ftype))
+        # p = get_file_path(template, name(ftype))
+        # p = get_file_path(template, ftype)
+        # _replace_map[ftype] = load(p, ftype)
+        _replace_map[ftype] = load(template, ftype)
     end
     return Replacer(template, _replace_map)
 end
@@ -21,7 +24,7 @@ end
 
 parent(r::Replacer) = r.template
 
-function _create_simulation(replacer::Replacer, target=tempname())
+function replace_file(replacer::Replacer, target=tempname())
     for (ftype, d) in replacer
         fp = joinpath(target, name(ftype))
         if isfile(fp)
@@ -34,7 +37,7 @@ end
 
 function create_simulation(replacer::Replacer, target=tempname())
     create_simulation(replacer.template, target)
-    _create_simulation(replacer, target)
+    replace_file(replacer, target)
     return target
 end
 

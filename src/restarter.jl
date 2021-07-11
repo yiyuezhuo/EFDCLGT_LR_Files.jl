@@ -1,4 +1,10 @@
 
+const restart_map = Dict(
+    "RESTART.OUT" => "RESTART.INP",
+    "TEMPBRST.OUT" => "TEMPB.RST",
+    "WQWCRST.OUT" => "wqini.inp"
+)
+
 struct Restarter <: RunnerFunc
     replacer::Replacer
     root_completed::String
@@ -30,7 +36,7 @@ function create_simulation(restarter::Restarter, target=tempname())
         end
     end
 
-    _create_simulation(replacer, target)
+    replace_file(replacer, target)
 end
 
 function Base.show(io::IO, r::Restarter)
