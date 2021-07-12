@@ -5,18 +5,18 @@ struct qbal_out <: AbstractFile
 end
 
 function load(io::IO, ::Type{qbal_out})
-    qbac_header_text_broken = "                                                 jday elev(m) qin(million-m3)qou(million-m3)  qctlo(million-m3)  qin(m) qou(m) qctlo(m) rain(m) eva(m)\n"
-    qbac_header_text = "jday elev(m) qin(million-m3) qou(million-m3)  qctlo(million-m3)  qin(m) qou(m) qctlo(m) rain(m) eva(m)"
+    qbal_header_text_broken = "                                                 jday elev(m) qin(million-m3)qou(million-m3)  qctlo(million-m3)  qin(m) qou(m) qctlo(m) rain(m) eva(m)"
+    qbal_header_text = "jday elev(m) qin(million-m3) qou(million-m3)  qctlo(million-m3)  qin(m) qou(m) qctlo(m) rain(m) eva(m)"
 
-    broken_header = (take(eachline(io), 1) |> collect)[1]
-    if broken_header != qbac_header_text_broken
-        @warn "Expected $qbac_header_text_broken, got $broken_header."
+    broken_header = (Iterators.take(eachline(io), 1) |> collect)[1]
+    if broken_header != qbal_header_text_broken
+        @warn "Expected: $qbal_header_text_broken, got: $broken_header."
     end
 
-    qbac_header = split(qbac_header_text)
+    qbal_header = split(qbal_header_text)
 
-    df = CSV.File(io, header=true, delim=" ", ignorerepeated=true)
-    rename!(df, qbac_header)
+    df = CSV.File(io, header=false, delim=" ", ignorerepeated=true) |> DataFrame
+    rename!(df, qbal_header)
     
     return qbal_out(broken_header, df)
 end
@@ -32,6 +32,13 @@ time_key(::Type{qbal_out}) = :jday
 
 function value_align(::Type{qbal_out}, ta::TimeArray)
     lead_ta = TimeSeries.lead(ta)
-    diff_ta = TimeArrays.diff(ta["qctlo(million-m3)"], padding=true) |> lead
-    return hcat(lead_ta["jday"], lead_ta["elev(m)"], diff_ta)
+    diff_ta = - TimeSeries.lead(TimeSeries.diff(ta["qctlo(million-m3)"], padding=true)) .* 1_000_000 # million-m3 -> m3
+    TimeSeries.rename!(diff_ta, [:qctlo])
+    # return diff_ta
+    return hcat(lead_ta["elev(m)"], diff_ta)
+end
+
+function align(dt::DateTime, FT::Type{<:Period}, DT::Type{<:Union{DateTime, <:Period}}, d::qbal_out)
+    ta = time_align(dt, FT, DT, d.df, time_key(qbal_out))
+    return value_align(qbal_out, ta)
 end

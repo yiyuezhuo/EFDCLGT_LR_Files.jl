@@ -167,3 +167,5 @@ end
 function Base.show(io::IO, t::SubSimulationTemplate)
     print(io, "SubSimulationTemplate(template=$(t.template), _override_root=$(t._override_root))")
 end
+
+update!(template::AbstractSimulationTemplate, d::AbstractFile, new_value) = update!(template.reference_time, d, new_value)

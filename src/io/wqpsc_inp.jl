@@ -1,7 +1,8 @@
 
 module _wqpsc_inp
 
-import ..EFDCLGT_LR_Files: AbstractFile, load, save, CSV, name, align, value_align, TimeArray, time_align2, TimeSeries
+import ..EFDCLGT_LR_Files: AbstractFile, load, save, CSV, name, align, value_align, TimeArray, time_align2,
+        TimeSeries, update!, to_df
 export wqpsc_inp
 
 using DataFrames
@@ -13,7 +14,7 @@ wqpsc_header_txt2 = "SU      SA    COD     DO    TAM    FCB   DSE   PSE"
 wqpsc_header_txt = wqpsc_header_txt1 * " " * wqpsc_header_txt2
 const wqpsc_header = split(wqpsc_header_txt)
 
-struct Concentration
+mutable struct Concentration
     headers::Vector{String}
     df::DataFrame
 end
@@ -35,6 +36,16 @@ function Base.getindex(d::wqpsc_inp, key::String)
     for node in d.node_list
         if name(node) == key
             return node.df
+        end
+    end
+    error("can't find $key")
+end
+
+function Base.setindex!(d::wqpsc_inp, v, key::String)
+    for node in d.node_list
+        if name(node) == key
+            node.df = v
+            return
         end
     end
     error("can't find $key")
@@ -113,6 +124,15 @@ function align(dt::DateTime, FT::Type{<:Period}, DT::Type{<:Union{DateTime, <:Pe
     end
     return rd
 end
+
+function update!(reference_time::DateTime, d::wqpsc_inp, ad::Dict{String, TimeArray})
+    # TODO: refactor update! to avoid duplication, however, the representation may evolve so we will not do it at this time.
+    for (key, ta) in ad
+        df = to_df(reference_time, ta, wqpsc_header)
+        d[key] = df
+    end
+end
+
 
 end
 

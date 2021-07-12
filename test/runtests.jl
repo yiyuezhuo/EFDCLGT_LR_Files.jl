@@ -95,4 +95,23 @@ template = SimulationTemplate(ENV["WATER_ROOT"], Day, Hour, [qser_inp, wqpsc_inp
 
     rm(td, recursive=true)
 
+    
+    for ftype in [qser_inp, wqpsc_inp]
+        d = load(template, ftype)
+        ad = align(template, d)
+        k = keys(d)[1]
+        df = d[k]
+        ta = ad[k]
+        time_key = TimeSeries.timestamp(ta)[1]
+        col_key = TimeSeries.colnames(ta)[1]
+        set_ta!(ta, time_key, col_key, 8964)
+        update!(template, d, ad)
+        
+        if ftype == qser_inp
+            @test d[k][1, col_key] == values(ta[time_key][col_key])[1,1] / 3600
+        else
+            @test d[k][1, col_key] == values(ta[time_key][col_key])[1,1]
+        end
+    end
+
 end

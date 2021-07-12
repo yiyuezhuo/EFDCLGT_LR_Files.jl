@@ -1,5 +1,5 @@
 
-struct FlowLevel
+mutable struct FlowLevel
     level::Int
     df::DataFrame
 end
@@ -60,6 +60,19 @@ function Base.getindex(d::qser_inp, key::Tuple{String, Int})
 end
 
 Base.getindex(d::qser_inp, s::String, i::Int) = d[(s, i)]
+
+function Base.setindex!(d::qser_inp, df::AbstractDataFrame, key::Tuple{String, Int})
+    key_name, key_idx = key
+    for node in d.node_list
+        if node isa Flow && name(node) == key_name
+            node.dl_vec[key_idx].df = df
+            return 
+        end
+    end
+    error("Can't find key $key to set")
+end
+
+Base.setindex!(d::qser_inp, df::AbstractDataFrame, s::String, i::Int) = d[(s, i)] = df
 
 function Base.keys(d::qser_inp)
     rv = Tuple{String, Int}[]
@@ -137,7 +150,7 @@ function save(io::IO, d::qser_inp)
 end
 
 function value_align(::Type{qser_inp}, ta::TimeArray)
-    # @show ta
+    # TODO: read info from template to support general conversion? 
     return ta[:flow] .* 3600  # m3/s -> m3/h
 end
 
@@ -153,4 +166,11 @@ function align(dt::DateTime, FT::Type{<:Period}, DT::Type{<:Union{DateTime, <:Pe
         end
     end
     return rd
+end
+
+function update!(reference_time::DateTime, d::qser_inp, ad::Dict{Tuple{String, Int}, TimeArray})
+    for (key, ta) in ad
+        df = to_df(reference_time, ta, ["time", "flow"], mat->mat ./ 3600) #  ./ 3600  # m3/h -> m3/s
+        d[key] = df
+    end
 end

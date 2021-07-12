@@ -6,14 +6,14 @@ export # file structs
     AbstractFile, efdc_inp, wqini_inp, WQWCRST_OUT, WQWCTS_OUT, cumu_struct_outflow_out, aser_inp,
     qbal_out, qser_inp, wqpsc_inp,
     # file methods
-    load, save, align, time_align, value_align, align,
+    load, save, align, time_align, value_align, align, update!,
     # Runners
     Runner, SimulationTemplate, SubSimulationTemplate, Replacer, Restarter,
     # Runner methods
     set_begin_day!, get_begin_day, set_sim_length!, get_sim_length, is_restarting, set_restarting!,
     add_begin_day!, copy_replacer, get_total_begin, get_total_length, convert_time,
     # Utilities
-    create_simulation, get_exe_path, replace_file, get_file_path
+    create_simulation, get_exe_path, replace_file, get_file_path, set_ta!
 
 using CSV
 using DataFrames
