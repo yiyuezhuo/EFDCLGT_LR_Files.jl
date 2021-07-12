@@ -2,7 +2,7 @@
 module _wqpsc_inp
 
 import ..EFDCLGT_LR_Files: AbstractFile, load, save, CSV, name, align, value_align, TimeArray, time_align2,
-        TimeSeries, update!, to_df
+        TimeSeries, update!, to_df, AbstractMapDfFile
 export wqpsc_inp
 
 using DataFrames
@@ -24,10 +24,10 @@ name(con::Concentration) = con.headers[end]
 function save(io::IO, con::Concentration)
     write(io, join(con.headers, " "))
     write(io, "\n")
-    save(io, con.df)
+    save(io, con.df, delim="\t")
 end
 
-struct wqpsc_inp <: AbstractFile
+struct wqpsc_inp <: AbstractMapDfFile
     node_list::Vector{Concentration}
     # df_map::Dict{String, DataFrame}
 end

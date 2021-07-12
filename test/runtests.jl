@@ -9,6 +9,7 @@ using TimeSeries
 
 debug_logger = SimpleLogger(stdout, Logging.Debug)
 default_logger = global_logger()
+global_logger(debug_logger)
 
 template = SimulationTemplate(ENV["WATER_ROOT"], Day, Hour, [qser_inp, wqpsc_inp, WQWCTS_OUT, cumu_struct_outflow_out])
 
@@ -95,7 +96,7 @@ template = SimulationTemplate(ENV["WATER_ROOT"], Day, Hour, [qser_inp, wqpsc_inp
 
     rm(td, recursive=true)
 
-    
+
     for ftype in [qser_inp, wqpsc_inp]
         d = load(template, ftype)
         ad = align(template, d)

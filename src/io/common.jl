@@ -26,8 +26,8 @@ function save(io::IO, d::Vector{String})
     write(io, "\n")
 end
 
-function save(io::IO, d::DataFrame; header=false)
-    CSV.write(io, d, append=true, header=header, delim=" ")
+function save(io::IO, d::DataFrame; header=false, delim=" ")
+    CSV.write(io, d, append=true, header=header, delim=delim)
 end
 
 name(typ::Type{<:AbstractFile}) = error("Name of $typ is undefined")
@@ -168,4 +168,20 @@ end
 Base.getindex(d::AbstractFile, key::Symbol) = d[string(key)]
 function Base.getindex(d::AbstractFile, key::String)
     error("Base.getindex is not supported for $(typeof(d))")
+end
+
+abstract type AbstractMapDfFile <: AbstractFile end
+
+function Base.show(io::IO, d::T) where T <: AbstractMapDfFile
+    print(io, "$T(keys->(")
+    size_vec = []
+    for k in keys(d)
+        print(io, "$k,")
+        push!(size_vec, size(d[k]))
+    end
+    for i in 2:length(size_vec)
+        @assert size_vec[1] == size_vec[i]
+    end
+    print(io, "), value_size->$(size_vec[1])")
+    print(io, ")")
 end

@@ -11,7 +11,7 @@ function Base.getindex(r::Runner, key)
     return master_map(r)[key]
 end
 
-function Base.setindex!(r::Runner, key, value)
+function Base.setindex!(r::Runner, value, key)
     master_map(r)[key] = value
 end
 

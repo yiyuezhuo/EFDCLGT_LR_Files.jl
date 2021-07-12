@@ -44,7 +44,7 @@ function save(io::IO, flow::Flow)
     end
 end
 
-struct qser_inp <: AbstractFile
+struct qser_inp <: AbstractMapDfFile
     node_list::Vector{Union{Flow, Vector{String}}}
     # df_map::Dict{Tuple{String, Int}, DataFrame}
 end
@@ -174,3 +174,4 @@ function update!(reference_time::DateTime, d::qser_inp, ad::Dict{Tuple{String, I
         d[key] = df
     end
 end
+
