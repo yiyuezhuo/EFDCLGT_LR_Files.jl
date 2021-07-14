@@ -17,7 +17,7 @@ end
 
 parent(r::Restarter) = r.replacer
 
-function create_simulation(restarter::Restarter, target=tempname())
+function create_simulation(restarter::Restarter, target=efdc_lp_tempname())
     replacer = restarter.replacer
     name_set = Set([name(ftyp) for ftyp in keys(replacer)])
 
@@ -41,4 +41,8 @@ end
 
 function Base.show(io::IO, r::Restarter)
     print(io, "Restarter(replacer=$(r.replacer), root_completed=$(r.root_completed))")
+end
+
+function Base.copy(restarter::Restarter)
+    return Restarter(copy(restarter.replacer), restarter.root_completed)
 end

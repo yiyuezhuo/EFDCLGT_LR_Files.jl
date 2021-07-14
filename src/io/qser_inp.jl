@@ -74,6 +74,9 @@ end
 
 Base.setindex!(d::qser_inp, df::AbstractDataFrame, s::String, i::Int) = d[(s, i)] = df
 
+"""
+Most `keys` of AbstractFile holds its original order. `efdc_inp` is an exception.
+"""
 function Base.keys(d::qser_inp)
     rv = Tuple{String, Int}[]
     for node in d.node_list

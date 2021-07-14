@@ -24,7 +24,7 @@ name(con::Concentration) = con.headers[end]
 function save(io::IO, con::Concentration)
     write(io, join(con.headers, " "))
     write(io, "\n")
-    save(io, con.df, delim="\t")
+    save(io, con.df; delim="\t")
 end
 
 struct wqpsc_inp <: AbstractMapDfFile

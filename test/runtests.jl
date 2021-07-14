@@ -82,7 +82,7 @@ template = SimulationTemplate(ENV["WATER_ROOT"], Day, Hour, [qser_inp, wqpsc_inp
         @test all(same_vec[1] .== same_vec[2:end])
     end
 
-    td = tempname()
+    td = efdc_lp_tempname()
     mkdir(td)
 
     qser = template[qser_inp]

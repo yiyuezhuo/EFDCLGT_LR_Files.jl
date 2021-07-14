@@ -67,3 +67,30 @@ function to_df(reference_time::DateTime, ta::TimeArray, header, mat_map=identity
     df = DataFrame([x y], header)
     return df
 end
+
+# These functions just use Julia default function at this time, but this may change in future.
+
+function efdc_lp_tempdir()
+    return tempdir()
+end
+
+function efdc_lp_tempname()
+    return tempname()
+end
+
+function is_efdc_lp_tempname(p)
+    # This may delete some files wrongly. however, they're "temporary" files...
+    return startswith(p, "jl_")
+end
+
+function efdc_lp_cleanup()
+    root = efdc_lp_tempdir()
+    name_vec = filter(is_efdc_lp_tempname, readdir(root))
+
+    @info "Ready to delete $(length(name_vec)) files, first is $(joinpath(root, name_vec[1]))"
+
+    ProgressMeter.@showprogress for name in name_vec
+        p = joinpath(root, name)
+        rm(p, recursive=true)
+    end
+end

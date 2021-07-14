@@ -8,12 +8,13 @@ export # file structs
     # file methods
     load, save, align, time_align, value_align, align, update!,
     # Runners
-    Runner, SimulationTemplate, SubSimulationTemplate, Replacer, Restarter,
+    Runner, AbstractSimulationTemplate, SimulationTemplate, SubSimulationTemplate, Replacer, Restarter,
     # Runner methods
     set_begin_day!, get_begin_day, set_sim_length!, get_sim_length, is_restarting, set_restarting!,
-    add_begin_day!, copy_replacer, get_total_begin, get_total_length, convert_time,
+    add_begin_day!, copy_replacer, get_total_begin, get_total_length, convert_time, get_template,
+    get_replacer,
     # Utilities
-    create_simulation, get_exe_path, replace_file, get_file_path, set_ta!
+    create_simulation, get_exe_path, replace_file, get_file_path, set_ta!, efdc_lp_tempname, efdc_lp_tempdir
 
 using CSV
 using DataFrames
@@ -23,6 +24,7 @@ using Dates
 import TimeSeries # There're many methods which are conflicted with DataFrames
 using TimeSeries: TimeArray
 using Statistics
+import ProgressMeter
 
 include("utils.jl")
 include("io/io.jl")

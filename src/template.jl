@@ -10,9 +10,22 @@ struct SimulationTemplate <: AbstractSimulationTemplate
     FT::Type # EX: FT=Day => 1601.1 -> 1601.1 day 
     DT::Type # EX: DT=Hour => rounded to Hour
     _share_map::Dict{Type, AbstractFile} # share_map is expected to not be modified.
+    qser_ref::Dict{Tuple{String, Int}, TimeArray}
+    wqpsc_ref::Dict{String, TimeArray}
+
+    #=
+    # TODO: there fields are not consistent with the pricinple of removing unnessary hash table from code.
+    ijk_to_flow_name::Dict{Tuple{Int, Int, Int}, String}
+    flow_name_to_ijk::Dict{String, Tuple{Int, Int, Int}}
+    inflow_name_to_keys::Dict{String, Vector{Tuple{String, Int}}}
+    ijk_to_overflow_idx::Dict{Tuple{Int, Int, Int}, Int}
+    overflow_idx_to_ijk::Vector{Tuple{Int, Int, Int}}
+    =#
 end
 
-function SimulationTemplate(input_root, FT::Type{<:Period}, DT::Type{<:Period}, share_vec::AbstractVector{<:Type})
+function SimulationTemplate(input_root, FT::Type{<:Period}, DT::Type{<:Period}, share_vec::AbstractVector{<:Type}, 
+                            load_qser_ad=qser_inp in share_vec,
+                            load_wqpsc_ad=wqpsc_inp in share_vec)
     dir_root = dirname(input_root)
     model_name_vec = [name for name in readdir(dir_root) if endswith(name, ".model")]
     @assert length(model_name_vec) == 1
@@ -41,7 +54,12 @@ function SimulationTemplate(input_root, FT::Type{<:Period}, DT::Type{<:Period}, 
         share_map[ftype] = load(joinpath(input_root, name(ftype)), ftype)
     end
 
-    return SimulationTemplate(input_root, exe_name, non_modified_files, reference_time, total_begin, total_length, FT, DT, share_map)
+    t_arg = (reference_time, FT, DT)
+
+    qser_ref = load_qser_ad ? align(t_arg..., share_map[qser_inp]) : Dict{Tuple{String, Int}, TimeArray}()
+    wqpsc_ref = load_wqpsc_ad ? align(t_arg..., share_map[wqpsc_inp]) : Dict{String, TimeArray}()
+
+    return SimulationTemplate(input_root, exe_name, non_modified_files, reference_time, total_begin, total_length, FT, DT, share_map, qser_ref, wqpsc_ref)
 end
 
 SimulationTemplate(input_root, FT::Type{<:Period}, DT::Type{<:Period}) = SimulationTemplate(input_root, FT, DT, Type{<:AbstractFile}[])
@@ -71,14 +89,14 @@ function parent(t::AbstractSimulationTemplate)
 end
 
 function create_simulation(func::Function, template_like)
-    target = tempname()
+    target = efdc_lp_tempname()
     create_simulation(template_like, target)
     res = func(target)
     rm(target, recursive=true)
     return res
 end
 
-function create_simulation(template::AbstractSimulationTemplate, target=tempname())
+function create_simulation(template::AbstractSimulationTemplate, target=efdc_lp_tempname())
     if !isdir(target)
         mkdir(target)
     end
@@ -138,18 +156,60 @@ function align(template::AbstractSimulationTemplate, d)
     return align(template.reference_time, template.FT, template.DT, d)
 end
 
-master_map(t::AbstractSimulationTemplate) = t._share_map
+master_map(t::SimulationTemplate) = t._share_map
 
 struct SubSimulationTemplate <: AbstractSimulationTemplate
     template::AbstractSimulationTemplate
     _override_root::String
+
+    _share_map::Dict{Type, AbstractFile} # share_map is expected to not be modified.
+    qser_ref::Dict{Tuple{String, Int}, TimeArray}
+    wqpsc_ref::Dict{String, TimeArray}
+end
+
+function SubSimulationTemplate(template::AbstractSimulationTemplate, override_root::String, 
+                            share_vec::AbstractVector{<:Type}, 
+                            load_qser_ad=qser_inp in share_vec,
+                            load_wqpsc_ad=wqpsc_inp in share_vec)
+    share_map = Dict{Type{<:AbstractFile}, AbstractFile}()
+
+    for ftype in share_vec
+        share_map[ftype] = load(joinpath(override_root, name(ftype)), ftype)
+    end
+
+    t_arg = (template.reference_time, template.FT, template.DT)
+
+    qser_ref = load_qser_ad ? align(t_arg..., share_map[qser_inp]) : Dict{Tuple{String, Int}, TimeArray}()
+    wqpsc_ref = load_wqpsc_ad ? align(t_arg..., share_map[wqpsc_inp]) : Dict{String, TimeArray}()
+
+    return SubSimulationTemplate(template, override_root, share_map, qser_ref, wqpsc_ref)
 end
 
 function Base.getproperty(t::SubSimulationTemplate, key::Symbol)
     if key in fieldnames(SubSimulationTemplate)
+        if key in (:qser_ref, :wqpsc_ref)
+            ret = getfield(t, key)
+            if isempty(ret)
+                return getfield(t.template, key)
+            else
+                return ret
+            end
+        end
         return getfield(t, key)
     end
     return getfield(t.template, key)
+end
+
+function Base.getindex(t::SubSimulationTemplate, key)
+    if key in keys(t._share_map)
+        return t._share_map[key]
+    else
+        return t.template._share_map[key]
+    end
+end
+
+function master_map(t::SubSimulationTemplate)
+    return merge(master_map(t.template), t._share_map)
 end
 
 function get_file_path(t::SubSimulationTemplate, file_name::String)
@@ -169,3 +229,11 @@ function Base.show(io::IO, t::SubSimulationTemplate)
 end
 
 update!(template::AbstractSimulationTemplate, d::AbstractFile, new_value) = update!(template.reference_time, d, new_value)
+
+function get_template(t::AbstractSimulationTemplate)
+    return t
+end
+
+function get_template(r::Runner)
+    return get_template(parent(r))
+end

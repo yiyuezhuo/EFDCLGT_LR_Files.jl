@@ -27,3 +27,10 @@ $WATER_UPSTREAM/1/wqpsc.inp
 ## Notes
 
 While the program is expected to run at least few minutes in practice, the pre-compiling time is not huge. However, it will still be painful for someone who is familiar with Python, check [PackageCompiler.jl](https://github.com/JuliaLang/PackageCompiler.jl) to avoid this cost if you want to place it in productive environment.
+
+## TODO list
+
+- [ ] Remove poor developed third library, such as "TimeSeries"
+- [ ] Decouple TimeArray and Runner related code. 
+- [ ] Move some logic / shared data from `SimulationTemplate` to other place.
+- [ ] Drop Julia again.

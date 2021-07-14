@@ -1,10 +1,10 @@
 
-struct Replacer <: RunnerFunc
-    template::SimulationTemplate
+struct Replacer{TT <: AbstractSimulationTemplate} <: RunnerFunc
+    template::TT
     _replace_map::Dict{Type, AbstractFile}
 end
 
-function Replacer(template::SimulationTemplate, replace_vec::AbstractVector{<:Type})
+function Replacer(template::AbstractSimulationTemplate, replace_vec::AbstractVector{<:Type})
     _replace_map = Dict{Type, AbstractFile}()
     for ftype in replace_vec
         # p = joinpath(template.input_root, name(ftype))
@@ -18,13 +18,13 @@ end
 
 master_map(t::Replacer) = t._replace_map
 
-function Replacer(template::SimulationTemplate)
+function Replacer(template::AbstractSimulationTemplate)
     return Replacer(template, Type[])
 end
 
 parent(r::Replacer) = r.template
 
-function replace_file(replacer::Replacer, target=tempname())
+function replace_file(replacer::Replacer, target=efdc_lp_tempname())
     for (ftype, d) in replacer
         fp = joinpath(target, name(ftype))
         if isfile(fp)
@@ -35,7 +35,7 @@ function replace_file(replacer::Replacer, target=tempname())
     end
 end
 
-function create_simulation(replacer::Replacer, target=tempname())
+function create_simulation(replacer::Replacer, target=efdc_lp_tempname())
     create_simulation(replacer.template, target)
     replace_file(replacer, target)
     return target
@@ -147,7 +147,7 @@ function add_begin_day!(r::Replacer)
     return add_begin_day!(r, d)
 end
 
-
+# TODO: remove these API to favor `get_replacer`
 set_begin_day!(r::Runner, x) = set_begin_day!(parent(r), x)
 set_sim_length!(r::Runner, x) = set_sim_length!(parent(r), x)
 get_begin_day(T, r::Runner) = get_begin_day(T, parent(r))
@@ -159,3 +159,6 @@ add_begin_day!(r::Runner) = add_begin_day!(parent(r))
 
 copy_replacer(r::Replacer) = copy(r)
 copy_replacer(r::Runner) = copy_replacer(parent(r))
+
+get_replacer(r::Replacer) = r
+get_replacer(r::Runner) = get_replacer(parent(r))

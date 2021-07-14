@@ -64,6 +64,8 @@ function Base.getindex(d::efdc_inp, index::String)
     return d._df_map[index]
 end
 
+Base.keys(d::efdc_inp) = keys(d._df_map)
+
 function load(io::IO, ::Type{efdc_inp})
     return efdc_inp(_parse(eachline(io))...)
 end
