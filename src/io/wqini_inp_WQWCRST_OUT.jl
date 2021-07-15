@@ -4,6 +4,7 @@ module _wqini_inp_WQWCRST_OUT
 export wqini_inp, WQWCRST_OUT
 using DataFrames
 import ..EFDCLGT_LR_Files: AbstractFile, load, save, CSV, name
+using DateDataFrames
 
 abstract type AbstractWqRestartFile <: AbstractFile end
 

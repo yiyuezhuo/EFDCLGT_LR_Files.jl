@@ -31,9 +31,9 @@ end
 name(::Type{aser_inp}) = "aser.inp"
 time_key(::Type{aser_inp}) = :time
 
-value_align(::Type{aser_inp}, ta::TimeArray) = ta
+value_align(::Type{aser_inp}, ta::DateDataFrame) = ta
 
 function align(dt::DateTime, FT::Type{<:Period}, DT::Type{<:Union{DateTime, <:Period}}, d::aser_inp)
-    ta = time_align2(dt, FT, DT, d.df, time_key(aser_inp))
+    ta = time_align(dt, FT, DT, d.df, time_key(aser_inp); delta=Minute(30))
     return value_align(aser_inp, ta)
 end

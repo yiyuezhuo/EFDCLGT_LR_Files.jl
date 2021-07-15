@@ -30,7 +30,7 @@ While the program is expected to run at least few minutes in practice, the pre-c
 
 ## TODO list
 
-- [ ] Remove poor developed third library, such as "TimeSeries"
-- [ ] Decouple TimeArray and Runner related code. 
+- [x] Remove poor developed third library, such as "TimeSeries"
+- [ ] Decouple DateDataFrame and Runner related code. 
 - [ ] Move some logic / shared data from `SimulationTemplate` to other place.
 - [ ] Drop Julia again.

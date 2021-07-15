@@ -21,10 +21,10 @@ using DataFrames
 using JSON
 using LightXML
 using Dates
-import TimeSeries # There're many methods which are conflicted with DataFrames
-using TimeSeries: TimeArray
 using Statistics
 import ProgressMeter
+using DateDataFrames
+
 
 include("utils.jl")
 include("io/io.jl")

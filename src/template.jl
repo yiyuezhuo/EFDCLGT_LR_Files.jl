@@ -10,8 +10,8 @@ struct SimulationTemplate <: AbstractSimulationTemplate
     FT::Type # EX: FT=Day => 1601.1 -> 1601.1 day 
     DT::Type # EX: DT=Hour => rounded to Hour
     _share_map::Dict{Type, AbstractFile} # share_map is expected to not be modified.
-    qser_ref::Dict{Tuple{String, Int}, TimeArray}
-    wqpsc_ref::Dict{String, TimeArray}
+    qser_ref::Dict{Tuple{String, Int}, DateDataFrame}
+    wqpsc_ref::Dict{String, DateDataFrame}
 
     #=
     # TODO: there fields are not consistent with the pricinple of removing unnessary hash table from code.
@@ -56,8 +56,8 @@ function SimulationTemplate(input_root, FT::Type{<:Period}, DT::Type{<:Period}, 
 
     t_arg = (reference_time, FT, DT)
 
-    qser_ref = load_qser_ad ? align(t_arg..., share_map[qser_inp]) : Dict{Tuple{String, Int}, TimeArray}()
-    wqpsc_ref = load_wqpsc_ad ? align(t_arg..., share_map[wqpsc_inp]) : Dict{String, TimeArray}()
+    qser_ref = load_qser_ad ? align(t_arg..., share_map[qser_inp]) : Dict{Tuple{String, Int}, DateDataFrame}()
+    wqpsc_ref = load_wqpsc_ad ? align(t_arg..., share_map[wqpsc_inp]) : Dict{String, DateDataFrame}()
 
     return SimulationTemplate(input_root, exe_name, non_modified_files, reference_time, total_begin, total_length, FT, DT, share_map, qser_ref, wqpsc_ref)
 end
@@ -148,8 +148,8 @@ function convert_time(template::AbstractSimulationTemplate, ST::Type{Day}, ::Typ
     return template.reference_time + delta
 end
 
-function time_align(template::AbstractSimulationTemplate, df::DataFrame, key)
-    return time_align(template.reference_time, template.FT, template.DT, df, key)
+function time_align(template::AbstractSimulationTemplate, df::DataFrame, key; kwargs...)
+    return time_align(template.reference_time, template.FT, template.DT, df, key; kwargs...)
 end
 
 function align(template::AbstractSimulationTemplate, d)
@@ -163,8 +163,8 @@ struct SubSimulationTemplate <: AbstractSimulationTemplate
     _override_root::String
 
     _share_map::Dict{Type, AbstractFile} # share_map is expected to not be modified.
-    qser_ref::Dict{Tuple{String, Int}, TimeArray}
-    wqpsc_ref::Dict{String, TimeArray}
+    qser_ref::Dict{Tuple{String, Int}, DateDataFrame}
+    wqpsc_ref::Dict{String, DateDataFrame}
 end
 
 function SubSimulationTemplate(template::AbstractSimulationTemplate, override_root::String, 
@@ -179,8 +179,8 @@ function SubSimulationTemplate(template::AbstractSimulationTemplate, override_ro
 
     t_arg = (template.reference_time, template.FT, template.DT)
 
-    qser_ref = load_qser_ad ? align(t_arg..., share_map[qser_inp]) : Dict{Tuple{String, Int}, TimeArray}()
-    wqpsc_ref = load_wqpsc_ad ? align(t_arg..., share_map[wqpsc_inp]) : Dict{String, TimeArray}()
+    qser_ref = load_qser_ad ? align(t_arg..., share_map[qser_inp]) : Dict{Tuple{String, Int}, DateDataFrame}()
+    wqpsc_ref = load_wqpsc_ad ? align(t_arg..., share_map[wqpsc_inp]) : Dict{String, DateDataFrame}()
 
     return SubSimulationTemplate(template, override_root, share_map, qser_ref, wqpsc_ref)
 end

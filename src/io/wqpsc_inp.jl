@@ -1,12 +1,13 @@
 
 module _wqpsc_inp
 
-import ..EFDCLGT_LR_Files: AbstractFile, load, save, CSV, name, align, value_align, TimeArray, time_align2,
-        TimeSeries, update!, to_df, AbstractMapDfFile
+import ..EFDCLGT_LR_Files: AbstractFile, load, save, CSV, name, align, value_align, time_align,
+        update!, to_df, AbstractMapDfFile
 export wqpsc_inp
 
 using DataFrames
 using Dates
+using DateDataFrames
 
 wqpsc_header_txt1 = "TIME	CHC	CHD	CHG	ROC	LOC	LDC	RDC	ROP	LOP	LDP	RDP	PO4	RON	LON	LDN	RDN	NH4	NO3"
 wqpsc_header_txt2 = "SU      SA    COD     DO    TAM    FCB   DSE   PSE"
@@ -107,25 +108,34 @@ function fluctuation_smooth!(mat::Matrix)
     end
 end
 
-function value_align(::Type{wqpsc_inp}, ta::TimeArray)
-    ta = ta[TimeSeries.colnames(ta)[2:end]] # remove time columns
-    mat = values(ta)
-    fluctuation_smooth!(mat)
+function fluctuation_smooth!(arr::AbstractVector)
+    for i=2:size(arr, 1)
+        if arr[i] == 0 && arr[i-1] != 0
+            arr[i] = arr[i-1] = arr[i-1] / 2
+        end
+    end
+end
+
+function value_align(::Type{wqpsc_inp}, ta::DateDataFrame)
+    ta = ta[!, names(ta)[2:end]] # remove time columns
+    # mat = values(ta)
+    # fluctuation_smooth!(mat)
+    fluctuation_smooth!.(eachcol(ta))
     return ta
 end
 
 function align(dt::DateTime, FT::Type{<:Period}, DT::Type{<:Union{DateTime, <:Period}}, d::wqpsc_inp)
-    rd = Dict{String, TimeArray}()
+    rd = Dict{String, DateDataFrame}()
     for node in d.node_list
         df = node.df
-        ta = time_align2(dt, FT, DT, df, time_key(wqpsc_inp))
+        ta = time_align(dt, FT, DT, df, time_key(wqpsc_inp); probe_coef=0.5, drop=true) # TODO: handle step other than Hour(1)
         ta = value_align(wqpsc_inp, ta)
         rd[name(node)] = ta
     end
     return rd
 end
 
-function update!(reference_time::DateTime, d::wqpsc_inp, ad::Dict{String, TimeArray})
+function update!(reference_time::DateTime, d::wqpsc_inp, ad::Dict{String, DateDataFrame})
     # TODO: refactor update! to avoid duplication, however, the representation may evolve so we will not do it at this time.
     for (key, ta) in ad
         df = to_df(reference_time, ta, wqpsc_header)

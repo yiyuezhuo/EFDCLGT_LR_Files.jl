@@ -4,6 +4,7 @@ module _efdc_inp
 export efdc_inp
 using DataFrames
 import ..EFDCLGT_LR_Files: generate_parse, load, save, AbstractFile, name
+using DateDataFrames
 
 const card_info_dsl = """
 C02  ISRESTI   ISDRY  ISIMTMP  ISIMWQ  ISIMDYE  TEMO  RKDYE  IASWRAD  SWRATNF   REVCHC  DABEDT  TBEDIT HTBED1 HTBED2    KBHM

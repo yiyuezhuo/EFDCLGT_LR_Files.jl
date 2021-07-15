@@ -45,57 +45,6 @@ function save(io::IO, d::PureDataFrameFile)
     save(io, d.df, header=true)
 end
 
-function resample_nearest(dtv::Vector{DateTime}, r::StepRange, delta::Period)
-    dt = r.start
-    
-    dt_building = DateTime[]
-    idx_building = Int[]
-
-    for idx in 2:length(dtv)
-        while dt + delta < dtv[idx-1]
-            dt += r.step
-        end
-        while dt + delta < dtv[idx]
-            push!(dt_building, dt)
-            push!(idx_building, idx-1)
-            
-            dt += r.step
-        end
-    end
-    while dt < r.stop
-        push!(dt_building, dt)
-        push!(idx_building, length(dtv))
-        
-        dt += r.step
-    end
-    return dt_building, idx_building
-end
-
-function resample_nearest(dtv::Vector{DateTime}, step::PT, delta::Period) where PT <: Period
-    r_begin = round(dtv[1], PT)
-    r_end = round(dtv[end], PT)
-    return resample_nearest(dtv, r_begin:step:r_end, delta)
-end
-
-function time_align2(dt::DateTime, FT::Type{<:Period}, step::Period, df::AbstractDataFrame, key; middle=true)
-    delta = middle ? Millisecond(step) / 2 : Millisecond(0)
-
-    dtv = convert_time.(dt, FT, DateTime, df[!, key])
-    tv, idx_vec = resample_nearest(dtv, step, delta)
-    mat = Matrix{Float64}(undef, length(tv), size(df, 2))
-
-    for (idx, k) in enumerate(names(df))
-        @views copy!(mat[:, idx], df[idx_vec, k])
-    end
-    ta = TimeArray(tv, mat, names(df))
-
-    return ta
-end
-
-function time_align2(dt::DateTime, FT::Type{<:Period}, DT::Type{<:Period}, df::AbstractDataFrame, key; middle=true)
-    step = DT(1)
-    return time_align2(dt, FT, step, df, key; middle=middle)
-end
 
 """
 EX:
@@ -120,7 +69,8 @@ is not valid. (But it's 0 so make no difference anyway.)
 
 # TODO: -1 ms from pair before this process?
 """
-function time_align(dt::DateTime, FT::Type{<:Period}, DT::Type{<:Union{DateTime, <:Period}}, df::AbstractDataFrame, key)
+function time_align(dt::DateTime, FT::Type{<:Period}, DT::Type{<:Union{DateTime, <:Period}}, 
+                    df::AbstractDataFrame, key; drop=false, kwargs...)
     #=
     df = copy(df)
     df[!, :date] = convert_time.(dt, FT, DT, df[!, key])
@@ -128,6 +78,7 @@ function time_align(dt::DateTime, FT::Type{<:Period}, DT::Type{<:Union{DateTime,
     =#
     # The above implementation use mapreduce, resulting Any type, the performance is terrible.
 
+    #=
     tv = convert_time.(dt, FT, DT, df[!, key])
     # mat = mapreduce((n)->df[!, n], hcat, names(df))
     mat = Matrix{Float64}(undef, size(df, 1), size(df, 2))
@@ -135,22 +86,20 @@ function time_align(dt::DateTime, FT::Type{<:Period}, DT::Type{<:Union{DateTime,
         @views copy!(mat[1:end, idx], df[!, k])
     end
     ta = TimeArray(tv, mat, names(df))
+    =#
 
-    mask = Vector{Bool}(undef, length(ta))
-    ts = TimeSeries.timestamp(ta)
-    mask[1] = true
-    for i in 2:length(ts)
-        mask[i] = ts[i] != ts[i-1]
-    end
+    # DateDataFrames refactor!
+    tv = convert_time.(dt, FT, DateTime, df[!, key])
+    ta = DateDataFrame(tv, df)
+    ta_resampled = resample(Nearest(), ta, DT(1); drop=drop, kwargs...) # TODO: handle step such as 15min, 30min?
 
-    ta_dedup = ta[mask]
-    return ta_dedup
+    return ta_resampled
 end
 
 """
 value_align will rescale units and possibly drop the float time column for convenient
 """
-function value_align(T::Type{<:AbstractFile}, ::TimeArray)
+function value_align(T::Type{<:AbstractFile}, ::DateDataFrame)
     error("value_align is unsupported for $T")
 end
 

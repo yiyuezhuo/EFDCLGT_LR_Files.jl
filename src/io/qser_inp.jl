@@ -152,18 +152,18 @@ function save(io::IO, d::qser_inp)
     end
 end
 
-function value_align(::Type{qser_inp}, ta::TimeArray)
+function value_align(::Type{qser_inp}, ta::DateDataFrame)
     # TODO: read info from template to support general conversion? 
-    return ta[:flow] .* 3600  # m3/s -> m3/h
+    return ta[!, [:flow]] .* 3600  # m3/s -> m3/h
 end
 
 function align(dt::DateTime, FT::Type{<:Period}, DT::Type{<:Union{DateTime, <:Period}}, d::qser_inp)
-    rd = Dict{Tuple{String, Int}, TimeArray}()
+    rd = Dict{Tuple{String, Int}, DateDataFrame}()
     for node in d.node_list
         if node isa Flow
             for dl in node.dl_vec
                 df = dl.df
-                ta = time_align2(dt, FT, DT, df, time_key(qser_inp))
+                ta = time_align(dt, FT, DT, df, time_key(qser_inp); probe_coef=0.5, drop=true) # TODO: other than 1 hour?
                 rd[name(node), dl.level] = value_align(qser_inp, ta)
             end
         end
@@ -171,9 +171,9 @@ function align(dt::DateTime, FT::Type{<:Period}, DT::Type{<:Union{DateTime, <:Pe
     return rd
 end
 
-function update!(reference_time::DateTime, d::qser_inp, ad::Dict{Tuple{String, Int}, TimeArray})
+function update!(reference_time::DateTime, d::qser_inp, ad::Dict{Tuple{String, Int}, DateDataFrame})
     for (key, ta) in ad
-        df = to_df(reference_time, ta, ["time", "flow"], mat->mat ./ 3600) #  ./ 3600  # m3/h -> m3/s
+        df = to_df(reference_time, ta, ["time", "flow"], arr->arr ./ 3600) #  ./ 3600  # m3/h -> m3/s
         d[key] = df
     end
 end
