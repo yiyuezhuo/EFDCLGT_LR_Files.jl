@@ -162,3 +162,6 @@ copy_replacer(r::Runner) = copy_replacer(parent(r))
 
 get_replacer(r::Replacer) = r
 get_replacer(r::Runner) = get_replacer(parent(r))
+
+# TODO: generalize to different time scale.
+get_sim_range(r::Replacer) = get_begin_day(DateTime, r):Hour(1):get_sim_length(DateTime, r)-Hour(1)

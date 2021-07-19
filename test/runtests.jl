@@ -5,7 +5,6 @@ using EFDCLGT_LR_Files: name
 
 using Dates
 using Logging
-# using TimeSeries
 using DateDataFrames
 
 debug_logger = SimpleLogger(stdout, Logging.Debug)
@@ -107,7 +106,6 @@ template = SimulationTemplate(ENV["WATER_ROOT"], Day, Hour, [qser_inp, wqpsc_inp
         ta = ad[k]
         time_key = timestamp(ta)[1]
         col_key = names(ta)[1]
-        # set_ta!(ta, time_key, col_key, 8964)
         ta[time_key, col_key] = 8964
         update!(template, d, ad)
         

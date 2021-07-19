@@ -45,6 +45,11 @@ function save(io::IO, d::PureDataFrameFile)
     save(io, d.df, header=true)
 end
 
+function Base.append!(d::FT, d2::FT) where FT <: PureDataFrameFile
+    append!(d.df, d2.df)
+end
+
+
 
 """
 EX:

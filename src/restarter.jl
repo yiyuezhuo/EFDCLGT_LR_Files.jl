@@ -46,3 +46,7 @@ end
 function Base.copy(restarter::Restarter)
     return Restarter(copy(restarter.replacer), restarter.root_completed)
 end
+
+function load(restarter::Restarter, ftype::Type{<:AbstractFile})
+    return load(joinpath(restarter.root_completed, name(ftype)), ftype)
+end

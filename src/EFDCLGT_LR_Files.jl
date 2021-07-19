@@ -12,7 +12,7 @@ export # file structs
     # Runner methods
     set_begin_day!, get_begin_day, set_sim_length!, get_sim_length, is_restarting, set_restarting!,
     add_begin_day!, copy_replacer, get_total_begin, get_total_length, convert_time, get_template,
-    get_replacer,
+    get_replacer, get_sim_range,
     # Utilities
     create_simulation, get_exe_path, replace_file, get_file_path, set_ta!, efdc_lp_tempname, efdc_lp_tempdir
 

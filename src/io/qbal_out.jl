@@ -32,7 +32,7 @@ time_key(::Type{qbal_out}) = :jday
 
 function value_align(::Type{qbal_out}, ta::DateDataFrame)
     lead_ta = lead(ta)
-    diff_ta = - lead(diff(ta[!, ["qctlo(million-m3)"]], padding=true)) .* 1_000_000 # million-m3 -> m3
+    diff_ta = lead(diff(ta[!, ["qctlo(million-m3)"]], padding=true)) .* -1_000_000 # million-m3 -> m3
     rename!(diff_ta, [:qctlo])
     # return diff_ta
     return hcat(lead_ta[!, ["elev(m)"]], diff_ta)

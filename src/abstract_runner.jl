@@ -19,6 +19,7 @@ Base.keys(r::Runner) = keys(master_map(r))
 Base.values(r::Runner) = values(master_map(r))
 Base.isempty(r::Runner) = isempty(master_map(r))
 Base.iterate(r::Runner, args...) = iterate(master_map(r), args...)
+# Base.merge!(r::Runner, r2::Runner) = merge!(master_map(r), master_map(r2))
 
 # https://discourse.julialang.org/t/broadcasting-structs-as-scalars/14310
 # TODO: Research broadcast interface details:
