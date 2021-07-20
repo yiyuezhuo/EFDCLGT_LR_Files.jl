@@ -97,9 +97,9 @@ function set_sim_length!(r::Replacer, sim_length::Day)
     return r
 end
 
-function set_sim_length!(r::Replacer, end_day::DateTime)
+function set_sim_length!(r::Replacer, end_time::DateTime)
     C03 = r[efdc_inp]["C03"]
-    C03[1, "NTC"] = Day(end_day - r.template.reference_time).value - C03[1, "TBEGIN"]
+    C03[1, "NTC"] = Day(end_time - r.template.reference_time + Millisecond(Hour(1))).value - C03[1, "TBEGIN"] # TODO ⊐̸ Hour(1)
     return r
 end
 
@@ -118,7 +118,7 @@ function get_sim_length(::Type{Day}, r::Replacer)
 end
 
 function get_sim_length(::Type{DateTime}, r::Replacer)
-    return get_begin_day(DateTime, r) + get_sim_length(Day, r)
+    return get_begin_day(DateTime, r) + get_sim_length(Day, r) - Hour(1) # TODO: ⊐̸ Hour(1)
 end
 
 function is_restarting(r::Replacer)
@@ -147,7 +147,8 @@ function add_begin_day!(r::Replacer)
     return add_begin_day!(r, d)
 end
 
-# TODO: remove these API to favor `get_replacer`
+# TODO: remove these API in favor of `get_replacer`
+# "Toad" error may be raised since x is not contrainted.
 set_begin_day!(r::Runner, x) = set_begin_day!(parent(r), x)
 set_sim_length!(r::Runner, x) = set_sim_length!(parent(r), x)
 get_begin_day(T, r::Runner) = get_begin_day(T, parent(r))
@@ -164,4 +165,10 @@ get_replacer(r::Replacer) = r
 get_replacer(r::Runner) = get_replacer(parent(r))
 
 # TODO: generalize to different time scale.
-get_sim_range(r::Replacer) = get_begin_day(DateTime, r):Hour(1):get_sim_length(DateTime, r)-Hour(1)
+get_sim_range(r::Replacer) = get_begin_day(DateTime, r):Hour(1):get_sim_length(DateTime, r)
+function get_undecided_range(r::Replacer)
+    begin_date = get_begin_day(DateTime, r)
+    t = r.template
+    end_date = t.reference_time + t.total_begin + t.total_length - Hour(1) # TODO: ⊐̸ Hour(1)
+    return begin_date:Hour(1):end_date 
+end

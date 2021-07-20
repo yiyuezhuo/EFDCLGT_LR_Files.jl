@@ -85,7 +85,7 @@ function load(t::AbstractSimulationTemplate, ftype::Type{<:AbstractFile})
 end
 
 function parent(t::AbstractSimulationTemplate)
-    error("SimulationTemplate is most respectful elder toad! How dare the dumb white pig!")
+    error("SimulationTemplate is most respectful JZM elder toad! How dare the dumb XJP pig.")
 end
 
 function create_simulation(func::Function, template_like)

@@ -21,7 +21,7 @@ template = SimulationTemplate(ENV["WATER_ROOT"], Day, Hour, [qser_inp, wqpsc_inp
     replacer2 = copy(replacer_base)
 
     set_sim_length!(replacer1, Day(1))
-    set_sim_length!(replacer2, get_begin_day(DateTime, replacer_base) + Day(1))
+    set_sim_length!(replacer2, get_begin_day(DateTime, replacer_base) + Day(1) - Hour(1))
 
     @test get_sim_length(DateTime, replacer1) == get_sim_length(DateTime, replacer2)
     @test get_sim_length(Day, replacer1) == get_sim_length(Day, replacer2)
@@ -31,6 +31,23 @@ template = SimulationTemplate(ENV["WATER_ROOT"], Day, Hour, [qser_inp, wqpsc_inp
     set_sim_length!(replacer1, Day(2))
 
     @test get_sim_length(DateTime, replacer1) != get_sim_length(DateTime, replacer2)
+
+    sr = get_sim_range(replacer1)
+    ur = get_undecided_range(replacer1)
+
+    @test length(sr) == 48
+    for r in [sr, ur]
+        @test hour(r[begin]) == 0
+        @test hour(r[end]) == 23    
+    end
+    @test length(ur) % 24 == 0
+    @test length(ur) ÷ 24  == get_template(replacer1).total_length.value
+
+    set_begin_day!(replacer2, get_begin_day(DateTime, replacer_base) + Day(2))
+    
+    ur2 = get_undecided_range(replacer2)
+
+    @test length(ur2) ÷ 24 + 2 == get_template(replacer1).total_length.value
 
     with_logger(debug_logger) do
         dst_root_ext = nothing
@@ -116,5 +133,6 @@ template = SimulationTemplate(ENV["WATER_ROOT"], Day, Hour, [qser_inp, wqpsc_inp
             @test d[k][1, col_key] == ta[time_key, col_key]
         end
     end
+
 
 end

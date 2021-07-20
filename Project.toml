@@ -1,7 +1,7 @@
 name = "EFDCLGT_LR_Files"
 uuid = "52cbd3d6-767d-4c35-a6ca-8d7d1225d4b0"
 authors = ["yiyuezhuo <yiyuezhuo@gmail.com>"]
-version = "0.2.1"
+version = "0.2.2"
 
 [deps]
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
