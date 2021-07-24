@@ -9,6 +9,14 @@ While this module tried to implement the `FileIO` interface, the `add_format` wo
 
 Tested on `EFDCLGT_LR_ver4.17.exe`.
 
+## Cleanup
+
+`create_simulation` will create temp files and *not* ensure to delete them since user may serialize some cache file including pointing to these paths. To cleanup these files by hand:
+
+```julia
+EFDCLGT_LR_Files.efdc_lp_cleanup()
+```
+
 ## Tests
 
 Define following environment variables:

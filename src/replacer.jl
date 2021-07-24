@@ -98,6 +98,7 @@ function set_sim_length!(r::Replacer, sim_length::Day)
 end
 
 function set_sim_length!(r::Replacer, end_time::DateTime)
+    @assert hour(end_time) == 23
     C03 = r[efdc_inp]["C03"]
     C03[1, "NTC"] = Day(end_time - r.template.reference_time + Millisecond(Hour(1))).value - C03[1, "TBEGIN"] # TODO ⊐̸ Hour(1)
     return r

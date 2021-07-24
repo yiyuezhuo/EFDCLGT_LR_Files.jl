@@ -45,6 +45,18 @@ function save(io::IO, d::PureDataFrameFile)
     save(io, d.df, header=true)
 end
 
+#=
+TODO: Do we need to remove this misleading umbrella method? While we can always just "append" two table,
+there will be obscure error for something like cumulant value. For example:
+
+0, 1, 2, 3, 4, 5, 6
+->
+[0, 1, 2, 3], [0, 1, 2]]
+->
+[0, 1, 2, 3, 0, 1, 2]
+However, we actually want:
+[0, 1, 2, 3] [0+4, 1+4, 2+4] -> [0, 1, 2, 3, 4, 5, 6] 
+=#
 function Base.append!(d::FT, d2::FT) where FT <: PureDataFrameFile
     append!(d.df, d2.df)
 end
